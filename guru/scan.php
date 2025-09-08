@@ -38,13 +38,12 @@ $hariConvert = [
 ];
 $hariSekarangEng = date('l');
 $hariSekarang = $hariConvert[$hariSekarangEng] ?? $hariSekarangEng;
-$jamSekarang = date('H:i:s'); // pakai format detik untuk aman
+$jamSekarang = date('H:i:s');
 
-// Tambahkan toleransi waktu ±15 menit
 $toleransiMenit = 15;
 $waktuSekarangTimestamp = strtotime($jamSekarang);
 
-// Cek jadwal aktif berdasarkan ID mapel, hari, kelas
+// Cek jadwal aktif
 $stmtJadwal = $conn->prepare("
     SELECT *, 
            TIME(jam_mulai) AS mulai, 
@@ -120,12 +119,20 @@ $stmtJadwal->close();
                 let nisn = "";
                 let kelasQr = kelasDefault;
 
+                // Coba parse JSON
                 try {
                     const data = JSON.parse(decodedText);
                     nisn = data.nisn ?? "";
                     if (data.kelas) kelasQr = data.kelas;
                 } catch {
-                    nisn = decodedText;
+                    // Kalau bukan JSON, asumsikan format "nisn|kelas"
+                    if (decodedText.includes("|")) {
+                        const parts = decodedText.split("|");
+                        nisn = parts[0] ?? "";
+                        if (parts[1]) kelasQr = parts[1];
+                    } else {
+                        nisn = decodedText;
+                    }
                 }
 
                 if (!nisn) {

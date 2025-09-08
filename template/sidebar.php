@@ -53,9 +53,9 @@ $jadwal_active    = $jadwal_active ?? false;
             <div id="siswaMenu" class="collapse <?= $siswa_active ? 'show' : '' ?>" data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
                     <a class="collapse-item <?= isset($submenu) && $submenu == 'siswa_tambah' ? 'active' : '' ?>" 
-                       href="/absensi_smk1kadungora/admin/siswa/tambah.php">Input Data</a>
+                       href="/absensi_smk1kadungora/admin/siswa/tambah.php">Input Siswa</a>
                     <a class="collapse-item <?= isset($submenu) && $submenu == 'siswa_view' ? 'active' : '' ?>" 
-                       href="/absensi_smk1kadungora/admin/siswa/index.php">Lihat Data</a>
+                       href="/absensi_smk1kadungora/admin/siswa/index.php">Lihat Siswa</a>
                 </div>
             </div>
         </li>
@@ -71,13 +71,13 @@ $jadwal_active    = $jadwal_active ?? false;
             <div id="guruMenu" class="collapse <?= $guru_active ? 'show' : '' ?>" data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
                     <a class="collapse-item <?= isset($submenu) && $submenu == 'guru_tambah' ? 'active' : '' ?>" 
-                       href="/absensi_smk1kadungora/admin/guru/tambah_guru.php">Input Data</a>
+                       href="/absensi_smk1kadungora/admin/guru/tambah_guru.php">Input Guru</a>
                     <a class="collapse-item <?= isset($submenu) && $submenu == 'guru_view' ? 'active' : '' ?>" 
-                       href="/absensi_smk1kadungora/admin/guru/guru.php">Lihat Data</a>
+                       href="/absensi_smk1kadungora/admin/guru/guru.php">Lihat Guru</a>
                 </div>
             </div>
         </li>
-        <!-- Data Guru -->
+        <!-- Data Kelas -->
         <li class="nav-item <?= $guru_active ? 'active' : '' ?>">
             <a class="nav-link collapsed" href="javascript:void(0)" 
                data-toggle="collapse" data-target="#kelasMenu" 
@@ -88,12 +88,29 @@ $jadwal_active    = $jadwal_active ?? false;
             <div id="kelasMenu" class="collapse <?= $kelas_active ? 'show' : '' ?>" data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
                     <a class="collapse-item <?= isset($submenu) && $submenu == 'kelas_tambah' ? 'active' : '' ?>" 
-                       href="/absensi_smk1kadungora/admin/kelas/tambah_kelas.php">Input Data</a>
+                       href="/absensi_smk1kadungora/admin/kelas/tambah_kelas.php">Input Kelas</a>
                     <a class="collapse-item <?= isset($submenu) && $submenu == 'guru_view' ? 'active' : '' ?>" 
-                       href="/absensi_smk1kadungora/admin/kelas/list_kelas.php">Lihat Data</a>
+                       href="/absensi_smk1kadungora/admin/kelas/list_kelas.php">Lihat Kelas</a>
                 </div>
             </div>
         </li>
+
+        <li class="nav-item <?= $kelas_active ? 'active' : '' ?>">
+        <a class="nav-link collapsed" href="javascript:void(0)" 
+           data-toggle="collapse" data-target="#waliKelasMenu" 
+           aria-expanded="<?= $kelas_active ? 'true' : 'false' ?>" aria-controls="waliKelasMenu">
+            <i class="fas fa-users"></i>
+            <span>Data Walikelas</span>
+        </a>
+        <div id="waliKelasMenu" class="collapse <?= $kelas_active ? 'show' : '' ?>" data-parent="#accordionSidebar">
+            <div class="bg-white py-2 collapse-inner rounded">
+                <a class="collapse-item <?= isset($submenu) && $submenu == 'absensi_view' ? 'active' : '' ?>" 
+                   href="/absensi_smk1kadungora/admin/walikelas/tambah.php">Input Walikelas</a>
+                <a class="collapse-item <?= isset($submenu) && $submenu == 'rekap_absensi' ? 'active' : '' ?>" 
+                   href="/absensi_smk1kadungora/admin/walikelas/index.php">Lihat Walikelas</a>
+            </div>
+        </div>
+    </li>
 
         <!-- Data Mapel -->
         <li class="nav-item <?= $mapel_active ? 'active' : '' ?>">
@@ -106,9 +123,9 @@ $jadwal_active    = $jadwal_active ?? false;
             <div id="mapelMenu" class="collapse <?= $mapel_active ? 'show' : '' ?>" data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
                     <a class="collapse-item <?= isset($submenu) && $submenu == 'mapel_tambah' ? 'active' : '' ?>" 
-                       href="/absensi_smk1kadungora/admin/mapel/tambah_mapel.php">Input Data</a>
+                       href="/absensi_smk1kadungora/admin/mapel/tambah_mapel.php">Input Mapel</a>
                     <a class="collapse-item <?= isset($submenu) && $submenu == 'mapel_view' ? 'active' : '' ?>" 
-                       href="/absensi_smk1kadungora/admin/mapel/list_mapel.php">Lihat Data</a>
+                       href="/absensi_smk1kadungora/admin/mapel/list_mapel.php">Lihat Mapel</a>
                 </div>
             </div>
         </li>
@@ -154,6 +171,8 @@ $jadwal_active    = $jadwal_active ?? false;
             </a>
         </li>
 
+        
+
     <?php elseif ($user['role'] === 'siswa'): ?>
 
         <li class="nav-item <?= $dashboard_active ? 'active' : '' ?>">
@@ -177,7 +196,31 @@ $jadwal_active    = $jadwal_active ?? false;
             </a>
         </li>
 
-    <?php endif; ?>
+
+    <?php elseif ($user['role'] === 'walikelas'): ?>
+
+    <li class="nav-item <?= $dashboard_active ? 'active' : '' ?>">
+        <a class="nav-link" href="/absensi_smk1kadungora/walikelas/index.php">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+        </a>
+    </li>
+
+    <li class="nav-item">
+        <a class="nav-link" href="/absensi_smk1kadungora/walikelas/absensi_kelas.php">
+            <i class="fas fa-users"></i>
+            <span>Daftar Siswa</span>
+        </a>
+    </li>
+
+    <li class="nav-item">
+        <a class="nav-link" href="/absensi_smk1kadungora/walikelas/rekap_absensi.php">
+            <i class="fas fa-file-alt"></i>
+            <span>Rekap Absensi</span>
+        </a>
+    </li>
+
+<?php endif; ?>
 
     <hr class="sidebar-divider d-none d-md-block">
 

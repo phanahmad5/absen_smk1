@@ -12,6 +12,26 @@ include '../../template/header.php';
 include '../../template/sidebar.php';
 ?>
 
+<!-- Custom CSS agar sidebar fix dan content scroll -->
+<style>
+    /* Sidebar fix di kiri */
+    #accordionSidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        height: 100%;
+        overflow-y: auto;
+        z-index: 1030;
+    }
+
+    /* Content digeser ke kanan sesuai lebar sidebar */
+    #content-wrapper {
+        margin-left: 224px; /* default width sidebar SB Admin 2 */
+        min-height: 100vh;
+        overflow-y: auto;
+    }
+</style>
+
 <!-- Content Wrapper -->
 <div id="content-wrapper" class="d-flex flex-column">
     <?php include '../../template/topbar.php'; ?>
@@ -52,11 +72,10 @@ include '../../template/sidebar.php';
                                                 <i class="fas fa-edit"></i> Edit
                                             </a>
                                             <a href="hapus_mapel.php?id=<?= $m['id'] ?>" 
-   onclick="return confirm('Yakin ingin menghapus mapel ini?')"
-   class="btn btn-sm btn-danger">
-    <i class="fas fa-trash"></i> Hapus
-</a>
-
+                                               onclick="return confirm('Yakin ingin menghapus mapel ini?')"
+                                               class="btn btn-sm btn-danger">
+                                                <i class="fas fa-trash"></i> Hapus
+                                            </a>
                                         </td>
                                     </tr>
                                 <?php } ?>

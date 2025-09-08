@@ -28,7 +28,7 @@ $nama = $_SESSION['user']['nama'];
     <!-- Content Wrapper -->
     <div id="content-wrapper" class="d-flex flex-column">
         <div id="content">
-
+ <?php include '../template/topbar.php'; ?>
             <!-- Topbar -->
             <?php include '../template/header.php'; ?>
             <!-- End of Topbar -->
@@ -36,7 +36,7 @@ $nama = $_SESSION['user']['nama'];
             <!-- Begin Page Content -->
             <div class="container-fluid">
                 <h1 class="h3 mb-4 text-gray-800">Halo, <?= htmlspecialchars($nama) ?>!</h1>
-                <p>Selamat datang di dashboard siswa. Silakan cek kehadiran atau cetak sertifikat jika tersedia.</p>
+                <p>Selamat datang di dashboard siswa. Silakan cek untuk jadwal dan kehadirannya.</p>
             </div>
             <!-- /.container-fluid -->
 

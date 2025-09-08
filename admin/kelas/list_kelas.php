@@ -17,10 +17,30 @@ include '../../template/sidebar.php';
 $query = mysqli_query($conn, "SELECT * FROM kelas ORDER BY nama_kelas ASC");
 ?>
 
+<!-- Custom CSS agar sidebar tetap dan content scroll -->
+<style>
+    /* Sidebar tetap fix di kiri */
+    #accordionSidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        height: 100%;
+        overflow-y: auto;
+        z-index: 1030;
+    }
+
+    /* Content bergeser sesuai lebar sidebar */
+    #content-wrapper {
+        margin-left: 224px; /* lebar sidebar SB Admin 2 */
+        min-height: 100vh;
+        overflow-y: auto;
+    }
+</style>
+
 <!-- Content Wrapper -->
 <div id="content-wrapper" class="d-flex flex-column">
 
-<?php include '../../template/topbar.php'; ?>
+    <?php include '../../template/topbar.php'; ?>
 
     <!-- Main Content -->
     <div id="content">
@@ -66,19 +86,15 @@ $query = mysqli_query($conn, "SELECT * FROM kelas ORDER BY nama_kelas ASC");
                                     <td><?= htmlspecialchars($d['nama_kelas']); ?></td>
                                     <td class="text-center">
                                         <div class="d-grid gap-2" style="max-width:120px;margin:0 auto;">
-                                            <!-- Jika mau tambahkan tombol Edit, bisa ditaruh di sini -->
-                                            <a href="edit_kelas.php?id=<?= intval($d['id']); ?>"
-   class="btn btn-sm btn-warning">
-    <i class="fas fa-edit"></i> Edit
-</a>
-
+                                            <a href="edit_kelas.php?id=<?= intval($d['id']); ?>" class="btn btn-sm btn-warning">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>
                                 <?php
                                     } // end while
                                 } else {
-                                    // Tidak ada data
                                 ?>
                                 <tr>
                                     <td class="text-center" colspan="3">Belum ada data kelas.</td>

@@ -1,32 +1,35 @@
 <?php
-// Mulai session & include koneksi jika perlu
 if (session_status() === PHP_SESSION_NONE) session_start();
+include '../../config/koneksi.php';
 
-// Folder QR Code
-$qr_folder = 'qrcodes/';
-$zip_filename = 'qr_codes.zip';
+// Folder tempat QR disimpan
+$qr_folder = __DIR__ . "/../../qrcodes/";
 
-// Cek folder ada
-if (!is_dir($qr_folder)) {
-    die("Folder QR code tidak ditemukan.");
-}
-
-// Buat ZIP file sementara
+// Nama file zip sementara
+$zip_filename = "semua_qr_codes.zip";
 $zip = new ZipArchive();
 $temp_zip_path = tempnam(sys_get_temp_dir(), 'qrzip');
 
-if ($zip->open($temp_zip_path, ZipArchive::CREATE) !== TRUE) {
+if ($zip->open($temp_zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== TRUE) {
     die("Gagal membuat file ZIP.");
 }
 
-// Tambahkan semua QR ke dalam ZIP
-foreach (glob($qr_folder . "*.png") as $file) {
-    $zip->addFile($file, basename($file));
+// Ambil semua QR Code dari database siswa
+$sql = $conn->query("SELECT qr_code, nisn, nama FROM siswa");
+while ($row = $sql->fetch_assoc()) {
+    $qr_path = $row['qr_code'];
+
+    // Pastikan path valid (bisa relatif/absolut)
+    if (file_exists($qr_path)) {
+        // Nama file di ZIP → format: NISN_Nama.png
+        $nama_file = preg_replace('/[^A-Za-z0-9_\-]/', '_', $row['nisn'] . "_" . $row['nama']) . ".png";
+        $zip->addFile($qr_path, $nama_file);
+    }
 }
 
 $zip->close();
 
-// Kirim header agar browser download file
+// Kirim file ZIP ke browser
 header('Content-Type: application/zip');
 header('Content-Disposition: attachment; filename="' . $zip_filename . '"');
 header('Content-Length: ' . filesize($temp_zip_path));

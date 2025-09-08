@@ -1,21 +1,30 @@
 <?php
+session_start();
 include '../config/koneksi.php';
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['status'])) {
-    foreach ($_POST['status'] as $id => $status) {
-        $stmt = $conn->prepare("UPDATE absensi SET status = ? WHERE id = ?");
-        $stmt->bind_param("si", $status, $id);
-        $stmt->execute();
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'guru') {
+    echo json_encode(['success' => false, 'message' => 'Akses ditolak']);
+    exit;
+}
+
+if (isset($_POST['id']) && isset($_POST['status'])) {
+    $id = intval($_POST['id']);
+    $status = $_POST['status'];
+
+    // Validasi hanya nilai enum yang diizinkan
+    $allowed = ['Hadir', 'Alpha', 'Sakit', 'Izin'];
+    if (!in_array($status, $allowed)) {
+        echo json_encode(['success' => false, 'message' => 'Status tidak valid']);
+        exit;
     }
 
-    // Alert sukses dan kembali ke halaman daftar absensi
-    echo "<script>
-        alert('Perubahan status absensi berhasil disimpan!');
-        window.location.href = 'lihat_absensi.php';
-    </script>";
+    $stmt = $conn->prepare("UPDATE absensi SET status = ? WHERE id = ?");
+    $stmt->bind_param("si", $status, $id);
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Status berhasil diperbarui']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Gagal memperbarui status']);
+    }
 } else {
-    echo "<script>
-        alert('Tidak ada perubahan yang disimpan.');
-        window.location.href = 'absensi.php';
-    </script>";
+    echo json_encode(['success' => false, 'message' => 'Data tidak lengkap']);
 }

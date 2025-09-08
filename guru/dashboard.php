@@ -10,6 +10,7 @@ $nama = $_SESSION['user']['nama'];
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" href="/absensi_smk1kadungora/assets/logosmk1.png" type="image/x-icon">
     <title>Dashboard Guru</title>
     <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
     <link href="../css/sb-admin-2.min.css" rel="stylesheet">

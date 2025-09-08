@@ -44,6 +44,7 @@ $result = $stmt->get_result();
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" href="/absensi_smk1kadungora/assets/logosmk1.png" type="image/x-icon">
     <title>Jadwal Mengajar</title>
     <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
     <link href="../css/sb-admin-2.min.css" rel="stylesheet">
@@ -97,8 +98,8 @@ $result = $stmt->get_result();
 
                                         // Gunakan strtotime untuk perbandingan jam + toleransi waktu
                                         $now = strtotime($jam_sekarang);
-                                        $start = strtotime($jam_mulai . ' -15 minutes'); // 15 menit sebelum mulai
-                                        $end = strtotime($jam_selesai . ' +15 minutes'); // 15 menit sesudah selesai
+                                        $start = strtotime($jam_mulai . ' -5 minutes'); // 15 menit sebelum mulai
+                                        $end = strtotime($jam_selesai . ' +5 minutes'); // 15 menit sesudah selesai
 
                                         // Cek apakah sekarang masuk jadwal
                                         $boleh_absen = (
@@ -125,10 +126,6 @@ $result = $stmt->get_result();
                                                 </button>
                                             <?php endif; ?>
 
-                                            <a href="rekap.php?kelas=<?= urlencode($d['kelas']) ?>&id_mapel=<?= urlencode($d['id_mapel']) ?>" 
-                                               class="btn btn-success btn-sm mb-1">
-                                                <i class="fas fa-file-alt"></i> Rekap
-                                            </a>
                                         </td>
                                     </tr>
                                     <?php endwhile; ?>

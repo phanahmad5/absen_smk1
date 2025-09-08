@@ -24,58 +24,88 @@ if (isset($_POST['import'])) {
             $spreadsheet = $reader->load($_FILES['file_excel']['tmp_name']);
             $sheetData = $spreadsheet->getActiveSheet()->toArray();
 
-            // Path QR Code
-            $path = "qrcodes/";
-            if (!file_exists($path)) mkdir($path, 0777, true);
-
             $successCount = 0;
             $errorCount = 0;
 
             foreach ($sheetData as $key => $row) {
-                // Lewati baris pertama (header)
+                // Lewati baris pertama (header Excel)
                 if ($key == 0) continue;
 
-                $nisn   = trim($row[0]);
-                $nama   = trim($row[1]);
-                $jk     = trim($row[2]);
-                $kelas  = trim($row[3]);
-                $wali_kelas  = trim($row[4]);
-                $telp   = trim($row[5]);
+                $nisn        = trim($row[0]);
+                $nama        = trim($row[1]);
+                $ttl         = trim($row[2]);
+                $jk          = trim($row[3]);
+                $kelas       = trim($row[4]);
+                $wali_kelas  = trim($row[5]);
+                $telp        = trim($row[6]);
 
                 if ($nisn == "" || $nama == "") {
                     $errorCount++;
                     continue;
                 }
 
-                // Generate data QR
-                $data_qr = json_encode([
-                    'nisn'  => $nisn,
-                    'kelas' => $kelas
-                ]);
+                // Validasi angka NISN & Telp
+                if (!ctype_digit($nisn) || !ctype_digit($telp)) {
+                    $errorCount++;
+                    continue;
+                }
 
-                // QR sementara
+                // Cek duplikat NISN
+                $cek = $conn->query("SELECT nisn FROM siswa WHERE nisn = '$nisn'");
+                if ($cek->num_rows > 0) {
+                    $errorCount++;
+                    continue;
+                }
+
+                // Buat folder QR per kelas
+                $path = "qrcodes/" . $kelas . "/";
+                if (!file_exists($path)) mkdir($path, 0777, true);
+
+                // Data QR → sama dengan input manual
+                $data_qr = $nisn . "|" . $kelas;
                 $tempQr = $path . "temp_" . $nisn . ".png";
-                QRcode::png($data_qr, $tempQr, QR_ECLEVEL_L, 4);
+                QRcode::png($data_qr, $tempQr, QR_ECLEVEL_L, 6);
 
                 // Tambahkan teks nama
                 $qr = imagecreatefrompng($tempQr);
                 $qrWidth = imagesx($qr);
                 $qrHeight = imagesy($qr);
 
-                $fontSize = 4;
-                $fontHeight = imagefontheight($fontSize);
-                $fontWidth = imagefontwidth($fontSize);
-                $textWidth = $fontWidth * strlen($nama);
-
-                $newHeight = $qrHeight + $fontHeight + 10;
+                $newHeight = $qrHeight + 50;
                 $img = imagecreatetruecolor($qrWidth, $newHeight);
-
                 $white = imagecolorallocate($img, 255, 255, 255);
                 imagefill($img, 0, 0, $white);
-
                 imagecopy($img, $qr, 0, 0, 0, 0, $qrWidth, $qrHeight);
+
                 $textColor = imagecolorallocate($img, 0, 0, 0);
-                imagestring($img, $fontSize, ($qrWidth - $textWidth) / 2, $qrHeight + 5, $nama, $textColor);
+                $fontFile = __DIR__ . "/../../assets/fonts/arial.ttf";
+                $text = $nama;
+
+                if (file_exists($fontFile)) {
+                    $maxFontSize = 14;
+                    $minFontSize = 8;
+                    $fontSize = $maxFontSize;
+
+                    do {
+                        $bbox = imagettfbbox($fontSize, 0, $fontFile, $text);
+                        $textWidth = $bbox[2] - $bbox[0];
+                        if ($textWidth > $qrWidth - 10) {
+                            $fontSize--;
+                        } else {
+                            break;
+                        }
+                    } while ($fontSize >= $minFontSize);
+
+                    $x = ($qrWidth - $textWidth) / 2;
+                    $y = $qrHeight + 30;
+                    imagettftext($img, $fontSize, 0, $x, $y, $textColor, $fontFile, $text);
+                } else {
+                    $fontSize = 4;
+                    $fontHeight = imagefontheight($fontSize);
+                    $fontWidth = imagefontwidth($fontSize);
+                    $textWidth = $fontWidth * strlen($text);
+                    imagestring($img, $fontSize, ($qrWidth - $textWidth) / 2, $qrHeight + 10, $text, $textColor);
+                }
 
                 $fileQr = $path . $nisn . ".png";
                 imagepng($img, $fileQr);
@@ -85,8 +115,8 @@ if (isset($_POST['import'])) {
                 unlink($tempQr);
 
                 // Simpan ke database
-                $sql = "INSERT INTO siswa (nisn, nama, jk, kelas, wali_kelas, no_telp, qr_code)
-                        VALUES ('$nisn', '$nama', '$jk', '$kelas', '$wali_kelas', '$telp', '$fileQr')";
+                $sql = "INSERT INTO siswa (nisn, nama, ttl, jk, kelas, wali_kelas, no_telp, qr_code)
+                        VALUES ('$nisn', '$nama', '$ttl', '$jk', '$kelas', '$wali_kelas', '$telp', '$fileQr')";
 
                 if ($conn->query($sql)) {
                     $successCount++;

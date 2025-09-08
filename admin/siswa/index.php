@@ -2,7 +2,7 @@
 // Pastikan session aktif
 if (session_status() == PHP_SESSION_NONE) session_start();
 
-// Include koneksi
+// Include koneksi & template
 include '../../config/koneksi.php';
 include '../../template/header.php';
 include '../../template/sidebar.php';
@@ -11,16 +11,15 @@ include '../../template/sidebar.php';
 <!-- Content Wrapper -->
 <div id="content-wrapper" class="d-flex flex-column">
 
-    <?php include '../../template/topbar.php'; ?>
-
     <!-- Main Content -->
-    <div id="content">
+    <div id="content" class="flex-grow-1" style="height:100vh; overflow-y:auto;">
+        <?php include '../../template/topbar.php'; ?>
 
         <div class="container-fluid mt-4">
 
             <!-- Alert Session -->
             <?php if (!empty($_SESSION['alert'])): ?>
-                <div class="alert alert-<?= $_SESSION['alert']['type']; ?> alert-dismissible fade show" role="alert">
+                <div class="alert alert-<?= $_SESSION['alert']['type']; ?> alert-dismissible fade show shadow-sm" role="alert">
                     <?= $_SESSION['alert']['message']; ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
@@ -29,89 +28,90 @@ include '../../template/sidebar.php';
 
             <!-- Header -->
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3 class="m-0">Daftar Data Siswa</h3>
-                <div>
+                <h3 class="fw-bold text-primary m-0">
+                    <i class=""></i> Daftar Data Siswa
+                </h3>
+                <div class="btn-group">
                     <a href="tambah.php" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Tambah Siswa
+                        <i class="fas fa-plus"></i> Tambah
                     </a>
+                    <hr>
                     <a href="download_semua_qr.php" class="btn btn-success">
-                        <i class="fas fa-download"></i> Download Semua QR
+                        <i class="fas fa-download"></i> Download QR
                     </a>
                     <a href="input_excel.php" class="btn btn-info">
-    <i class="fas fa-file-import"></i> Import Excel
-</a>
-
+                        <i class="fas fa-file-import"></i> Import Excel
+                    </a>
                 </div>
             </div>
 
             <!-- Card Tabel -->
-            <div class="card shadow">
+            <div class="card shadow-lg border-0 rounded-3">
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered table-hover align-middle" id="tabelSiswa" width="100%">
-                            <thead class="table-light text-center">
+                        <table class="table table-bordered table-hover table-striped align-middle text-center" id="tabelSiswa" width="100%">
+                            <thead class="table-light">
                                 <tr>
                                     <th>NISN</th>
                                     <th>Nama</th>
+                                    <th>TTL</th>
                                     <th>Jenis Kelamin</th>
                                     <th>Kelas</th>
                                     <th>Wali Kelas</th>
                                     <th>No Telp</th>
                                     <th>QR Code</th>
-                                    <th width="100px">Aksi</th>
+                                    <th width="120px">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php
                                 $q = $conn->query("SELECT * FROM siswa");
-                                while($d = $q->fetch_assoc()) {
-                                ?>
-                                <tr>
-                                    <td class="text-center"><?= $d['nisn'] ?></td>
-                                    <td><?= $d['nama'] ?></td>
-                                    <td class="text-center"><?= $d['jk'] ?></td>
-                                    <td class="text-center"><?= $d['kelas'] ?></td>
-                                    <td class="text-center"><?= $d['wali_kelas'] ?></td>
-                                    <td><?= $d['no_telp'] ?></td>
-                                    <td class="text-center">
-                                        <img src="<?= $d['qr_code'] ?>" width="70" alt="QR">
-                                    </td>
-                                    <td class="text-center">
-                                        <div class="d-grid gap-2">
-                                            <a href="edit_siswa.php?id=<?= $d['id'] ?>" class="btn btn-sm btn-warning">
-                                                <i class="fas fa-edit"></i> Edit
-                                            </a>
-                                            <a href="hapus_siswa.php?id=<?= $d['id'] ?>" 
-                                               onclick="return confirm('Yakin ingin menghapus siswa ini?')" 
-                                               class="btn btn-sm btn-danger">
-                                                <i class="fas fa-trash"></i> Hapus
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <?php } ?>
+                                while ($d = $q->fetch_assoc()): ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($d['nisn']); ?></td>
+                                        <td class="text-start"><?= htmlspecialchars($d['nama']); ?></td>
+                                        <td><?= htmlspecialchars($d['ttl']); ?></td>
+                                        <td><?= htmlspecialchars($d['jk']); ?></td>
+                                        <td><?= htmlspecialchars($d['kelas']); ?></td>
+                                        <td><?= htmlspecialchars($d['wali_kelas']); ?></td>
+                                        <td class="text-start"><?= htmlspecialchars($d['no_telp']); ?></td>
+                                        <td>
+                                            <img src="<?= htmlspecialchars($d['qr_code']); ?>" width="70" alt="QR">
+                                        </td>
+                                        <td>
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <a href="edit_siswa.php?id=<?= $d['id']; ?>" class="btn btn-sm btn-warning">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="hapus_siswa.php?id=<?= $d['id']; ?>" 
+                                                   onclick="return confirm('Yakin ingin menghapus siswa ini?')" 
+                                                   class="btn btn-sm btn-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endwhile; ?>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
+            
         </div> <!-- /.container-fluid -->
-
     </div>
     <!-- End of Main Content -->
 
     <?php include '../../template/footer.php'; ?>
-
 </div>
 <!-- End of Content Wrapper -->
-
-</div> <!-- End of Page Wrapper -->
 
 <!-- DataTables Script -->
 <script>
 $(document).ready(function(){
     $('#tabelSiswa').DataTable({
-        "pageLength": 10,
+        "pageLength": 10, // default tampil 10
+        "lengthMenu": [ [10, 25, 50, 100, 250, 500], [10, 25, 50, 100, 250, 500] ],
         "language": {
             "lengthMenu": "Tampilkan _MENU_ data",
             "search": "Cari:",
@@ -123,3 +123,4 @@ $(document).ready(function(){
     });
 });
 </script>
+

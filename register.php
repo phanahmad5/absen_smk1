@@ -42,14 +42,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="utf-8">
     <title>Register - Absensi</title>
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
     <link href="css/sb-admin-2.min.css" rel="stylesheet">
+
+    <style>
+        /* Custom style untuk kolom logo */
+        .bg-login-logo {
+            background-color: #fff;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+        }
+        .bg-login-logo img {
+            max-width: 250px;
+            height: auto;
+            user-select: none;
+        }
+    </style>
 </head>
-<body class="bg-gradient-primary">
+<body class="bg-gradient-info">
 
 <div class="container">
     <div class="row justify-content-center">
@@ -57,15 +73,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="card o-hidden border-0 shadow-lg my-5">
                 <div class="card-body p-0">
                     <div class="row">
-                        <div class="col-lg-6 d-none d-lg-block bg-register-image"></div>
+                        <!-- Kolom logo sekolah -->
+                        <div class="col-lg-6 d-none d-lg-flex bg-login-logo">
+                            <img src="/absensi_smk1kadungora/assets/logosmk1.png" alt="Logo Sekolah">
+                        </div>
+
+                        <!-- Kolom form register -->
                         <div class="col-lg-6">
                             <div class="p-5">
                                 <div class="text-center">
                                     <h1 class="h4 text-gray-900 mb-4">Buat Akun Baru</h1>
                                     <?php if ($error): ?>
-                                        <div class="alert alert-danger"><?= $error ?></div>
+                                        <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
                                     <?php elseif ($success): ?>
-                                        <div class="alert alert-success"><?= $success ?></div>
+                                        <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
                                     <?php endif; ?>
                                 </div>
                                 <form class="user" method="POST" action="">
@@ -83,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             <input type="password" name="repeat_password" class="form-control form-control-user" placeholder="Ulangi Password" required>
                                         </div>
                                     </div>
-                                    <button type="submit" class="btn btn-success btn-user btn-block">
+                                    <button type="submit" class="btn btn-info btn-user btn-block">
                                         Register
                                     </button>
                                     <a href="login.php" class="btn btn-primary btn-user btn-block">
@@ -96,12 +117,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>  
-</div>
+
+                    </div> <!-- end row -->
+                </div> <!-- end card-body -->
+            </div> <!-- end card -->
+        </div> <!-- end col -->
+    </div> <!-- end row -->
+</div> <!-- end container -->
 
 <script src="vendor/jquery/jquery.min.js"></script>
 <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>

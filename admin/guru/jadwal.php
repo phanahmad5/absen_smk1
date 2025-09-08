@@ -14,10 +14,30 @@ $query = mysqli_query($conn,
      ORDER BY jadwal.hari, jadwal.jam_mulai ASC");
 ?>
 
+<!-- Custom CSS agar sidebar fix dan content scroll -->
+<style>
+    /* Sidebar tetap fix di kiri */
+    #accordionSidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        height: 100%;
+        overflow-y: auto;
+        z-index: 1030;
+    }
+
+    /* Konten geser ke kanan, hanya konten yang scroll */
+    #content-wrapper {
+        margin-left: 224px; /* default lebar sidebar SB Admin 2 */
+        min-height: 100vh;
+        overflow-y: auto;
+    }
+</style>
+
 <!-- Content Wrapper -->
 <div id="content-wrapper" class="d-flex flex-column">
     <div id="content">
-<?php include '../../template/topbar.php'; ?>
+        <?php include '../../template/topbar.php'; ?>
         <!-- Main Content -->
         <div class="container-fluid mt-4">
             <!-- Judul Halaman -->
@@ -63,7 +83,7 @@ $query = mysqli_query($conn,
                                             </a>
                                             <a href="hapus_jadwal.php?id=<?= $d['id'] ?>" 
                                                onclick="return confirm('Hapus jadwal ini?')" 
-                                               class="btn btn-sm btn-warning">
+                                               class="btn btn-sm btn-danger">
                                                 <i class="fas fa-trash"></i> Hapus
                                             </a>
                                         </td>
