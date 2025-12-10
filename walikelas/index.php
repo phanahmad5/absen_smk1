@@ -70,9 +70,7 @@ $totalSiswa = $row['total_siswa'];
                         <div class="card shadow h-100 py-2">
                             <div class="card-body text-center">
                                 <h5 class="font-weight-bold text-gray-800 mb-3">Menu Cepat</h5>
-                                <a href="walikelas/absensi_kelas.php" class="btn btn-primary btn-lg mx-2">
-                                    <i class="fas fa-users"></i> Lihat Absensi
-                                </a>
+                                
                                 <a href="rekap_absensi.php" class="btn btn-success btn-lg mx-2">
                                     <i class="fas fa-file-alt"></i> Rekap Absensi
                                 </a>

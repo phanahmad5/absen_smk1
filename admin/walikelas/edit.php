@@ -1,87 +1,76 @@
 <?php
 session_start();
 include '../../config/koneksi.php';
+include '../../template/header.php';
+include '../../template/sidebar.php';
 
-// Ambil daftar kelas untuk dropdown
-$kelasQuery = $conn->query("SELECT * FROM kelas ORDER BY nama_kelas ASC");
+// Ambil data wali berdasarkan ID
+$id = $_GET['id'];
+$q = $conn->query("SELECT * FROM wali_kelas WHERE id='$id'");
+$d = $q->fetch_assoc();
 
-// Ambil ID wali kelas dari query string
-$id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+if (isset($_POST['update'])) {
+    $nama     = $_POST['nama'];
+    $username = $_POST['username'];
+    $kelas    = $_POST['kelas'];
+    $password = $_POST['password'];
 
-// Ambil data wali kelas
-$stmt = $conn->prepare("SELECT * FROM wali_kelas WHERE id = ?");
-$stmt->bind_param("i", $id);
-$stmt->execute();
-$result = $stmt->get_result();
-$wali = $result->fetch_assoc();
-
-if (!$wali) {
-    $_SESSION['alert'] = ['type'=>'danger','message'=>'Data wali kelas tidak ditemukan'];
-    header("Location: index.php");
-    exit;
-}
-
-// Proses update
-if (isset($_POST['simpan'])) {
-    $nama = trim($_POST['nama']);
-    $username = trim($_POST['username']);
-    $password = trim($_POST['password']); // kosong = tidak diubah
-    $kelas = trim($_POST['kelas']);
-
+    // Jika password diisi → update password juga
     if (!empty($password)) {
-        $passHash = md5($password); // bisa diganti password_hash()
-        $q = $conn->query("UPDATE wali_kelas SET nama='$nama', username='$username', password='$passHash', kelas='$kelas' WHERE id=$id");
+        $password_hash = password_hash($password, PASSWORD_DEFAULT);
+        $update = $conn->query("UPDATE wali_kelas 
+                                SET nama='$nama', username='$username', kelas='$kelas', password='$password_hash' 
+                                WHERE id='$id'");
     } else {
-        $q = $conn->query("UPDATE wali_kelas SET nama='$nama', username='$username', kelas='$kelas' WHERE id=$id");
+        $update = $conn->query("UPDATE wali_kelas 
+                                SET nama='$nama', username='$username', kelas='$kelas' 
+                                WHERE id='$id'");
     }
 
-    if ($q) {
-        $_SESSION['alert'] = ['type'=>'success','message'=>'Data wali kelas berhasil diperbarui'];
-        header("Location: index.php");
-        exit;
+    if ($update) {
+        echo "<script>alert('Data berhasil diperbarui');window.location='index.php';</script>";
     } else {
-        $error = "Gagal memperbarui data: " . $conn->error;
+        echo "<script>alert('Gagal memperbarui data');</script>";
     }
 }
-
 ?>
 
-<?php include '../../template/header.php'; ?>
-<?php include '../../template/sidebar.php'; ?>
+<div class="container-fluid mt-4">
+    <h3>Edit Wali Kelas</h3>
 
-<div class="container mt-4">
-    <div class="card shadow col-md-6">
+    <div class="card shadow">
         <div class="card-body">
-            <h4>Edit Wali Kelas</h4>
-            <?php if (!empty($error)) : ?>
-                <div class="alert alert-danger"><?= $error ?></div>
-            <?php endif; ?>
-            <form method="post">
+            <form method="POST">
                 <div class="mb-3">
                     <label>Nama</label>
-                    <input type="text" name="nama" class="form-control" value="<?= htmlspecialchars($wali['nama']) ?>" required>
+                    <input type="text" name="nama" class="form-control" value="<?= $d['nama'] ?>" required>
                 </div>
                 <div class="mb-3">
                     <label>Username</label>
-                    <input type="text" name="username" class="form-control" value="<?= htmlspecialchars($wali['username']) ?>" required>
+                    <input type="text" name="username" class="form-control" value="<?= $d['username'] ?>" required>
                 </div>
                 <div class="mb-3">
-                    <label>Password (kosongkan jika tidak ingin diubah)</label>
-                    <input type="password" name="password" class="form-control">
-                </div>
+    <label>Kelas</label>
+    <select name="kelas" class="form-control" required>
+        <option value="">-- Pilih Kelas --</option>
+        <?php
+        $qKelas = $conn->query("SELECT * FROM kelas ORDER BY nama_kelas ASC");
+        while ($k = $qKelas->fetch_assoc()) {
+            $selected = ($d['kelas'] == $k['nama_kelas']) ? 'selected' : '';
+            echo "<option value='{$k['nama_kelas']}' $selected>{$k['nama_kelas']}</option>";
+        }
+        ?>
+    </select>
+</div>
+
                 <div class="mb-3">
-                    <label>Kelas</label>
-                    <select name="kelas" class="form-control" required>
-                        <option value="">-- Pilih Kelas --</option>
-                        <?php while($k = $kelasQuery->fetch_assoc()): ?>
-                            <option value="<?= htmlspecialchars($k['nama_kelas']) ?>" <?= $wali['kelas'] == $k['nama_kelas'] ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($k['nama_kelas']) ?>
-                            </option>
-                        <?php endwhile; ?>
-                    </select>
+                    <label>Password <small class="text-muted">(kosongkan jika tidak diubah)</small></label>
+                    <input type="password" name="password" class="form-control" placeholder="Isi jika ingin ganti password">
                 </div>
-                <button name="simpan" class="btn btn-success">Simpan Perubahan</button>
-                <a href="index.php" class="btn btn-secondary">Batal</a>
+                <button type="submit" name="update" class="btn btn-success">
+                    <i class="fas fa-save"></i> Update
+                </button>
+                <a href="index.php" class="btn btn-secondary">Kembali</a>
             </form>
         </div>
     </div>

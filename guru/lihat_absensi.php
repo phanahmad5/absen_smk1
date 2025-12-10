@@ -10,7 +10,18 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'guru') {
 
 $id_guru = $_SESSION['user']['id'];
 
-// Ambil data absensi milik guru ini
+$tanggal_awal  = isset($_GET['tanggal_awal']) ? $_GET['tanggal_awal'] : '';
+$tanggal_akhir = isset($_GET['tanggal_akhir']) ? $_GET['tanggal_akhir'] : '';
+$kelas         = isset($_GET['kelas']) ? $_GET['kelas'] : '';
+$mapel         = isset($_GET['mapel']) ? $_GET['mapel'] : '';
+
+// Ambil daftar kelas unik dari tabel absensi
+$list_kelas = $conn->query("SELECT DISTINCT kelas FROM absensi ORDER BY kelas ASC");
+
+// Ambil daftar mapel unik dari tabel absensi (atau dari tabel jadwal)
+$list_mapel = $conn->query("SELECT DISTINCT mata_pelajaran FROM absensi ORDER BY mata_pelajaran ASC");
+
+// Query dasar
 $sql = "
     SELECT DISTINCT
         a.id,
@@ -25,10 +36,33 @@ $sql = "
     JOIN siswa s ON a.nisn = s.nisn
     JOIN jadwal j ON a.mapel_id = j.mapel
     WHERE j.id_guru = ?
-    ORDER BY a.tanggal DESC, a.jam DESC
 ";
+
+// Filter dinamis
+$params = [$id_guru];
+$types  = "i";
+
+if ($tanggal_awal && $tanggal_akhir) {
+    $sql .= " AND a.tanggal BETWEEN ? AND ?";
+    $params[] = $tanggal_awal;
+    $params[] = $tanggal_akhir;
+    $types   .= "ss";
+}
+if ($kelas) {
+    $sql .= " AND a.kelas = ?";
+    $params[] = $kelas;
+    $types   .= "s";
+}
+if ($mapel) {
+    $sql .= " AND a.mata_pelajaran = ?";
+    $params[] = $mapel;
+    $types   .= "s";
+}
+
+$sql .= " ORDER BY a.tanggal DESC, a.jam DESC";
+
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $id_guru);
+$stmt->bind_param($types, ...$params);
 $stmt->execute();
 $result = $stmt->get_result();
 ?>
@@ -41,6 +75,7 @@ $result = $stmt->get_result();
     <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
     <link href="../css/sb-admin-2.min.css" rel="stylesheet">
     <link href="../vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/buttons/2.3.7/css/buttons.bootstrap4.min.css" rel="stylesheet"/>
     <script src="../vendor/jquery/jquery.min.js"></script>
 </head>
 <body id="page-top">
@@ -53,12 +88,45 @@ $result = $stmt->get_result();
             <div class="container-fluid">
                 <h1 class="h3 mb-4 text-gray-800">Rekap Absensi</h1>
 
+              
+                <!-- Data Absensi -->
                 <div class="card shadow mb-4">
                     <div class="card-header py-3 bg-primary">
                         <h6 class="m-0 font-weight-bold text-white">Data Kehadiran Siswa</h6>
                     </div>
+                      <!-- Filter Form -->
+               
                     <div class="card-body">
-                        <div id="alert-message"></div>
+                        <form method="GET" class="form-inline">
+                            <label class="mr-2">Tanggal:</label>
+                            <input type="date" name="tanggal_awal" value="<?= $tanggal_awal ?>" class="form-control mr-2">
+
+                            <label class="mr-2">Kelas:</label>
+                            <select name="kelas" class="form-control mr-2">
+                                <option value="">-- Semua Kelas --</option>
+                                <?php while($k = $list_kelas->fetch_assoc()): ?>
+                                    <option value="<?= $k['kelas']; ?>" <?= ($kelas == $k['kelas']) ? 'selected' : ''; ?>>
+                                        <?= $k['kelas']; ?>
+                                    </option>
+                                <?php endwhile; ?>
+                            </select>
+
+                            <label class="mr-2">Mapel:</label>
+                            <select name="mapel" class="form-control mr-2">
+                                <option value="">-- Semua Mapel --</option>
+                                <?php while($m = $list_mapel->fetch_assoc()): ?>
+                                    <option value="<?= $m['mata_pelajaran']; ?>" <?= ($mapel == $m['mata_pelajaran']) ? 'selected' : ''; ?>>
+                                        <?= $m['mata_pelajaran']; ?>
+                                    </option>
+                                <?php endwhile; ?>
+                            </select>
+
+                            <button type="submit" class="btn btn-primary">Terapkan</button>
+                        </form>
+                    </div>
+                </div>
+
+                    <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover" id="dataTable" width="100%" cellspacing="0">
                                 <thead class="thead-light">
@@ -71,12 +139,11 @@ $result = $stmt->get_result();
                                         <th>Tanggal</th>
                                         <th>Jam</th>
                                         <th>Status</th>
-                                        <th>Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php $no = 1; while ($row = $result->fetch_assoc()) : ?>
-                                    <tr id="row-<?= $row['id']; ?>">
+                                    <tr>
                                         <td><?= $no++; ?></td>
                                         <td><?= htmlspecialchars($row['nisn']); ?></td>
                                         <td><?= htmlspecialchars($row['nama_siswa']); ?></td>
@@ -84,7 +151,7 @@ $result = $stmt->get_result();
                                         <td><?= htmlspecialchars($row['mata_pelajaran']); ?></td>
                                         <td><?= htmlspecialchars($row['tanggal']); ?></td>
                                         <td><?= htmlspecialchars($row['jam']); ?></td>
-                                        <td class="status-text">
+                                        <td>
                                             <?php 
                                             if ($row['status'] === 'Hadir') {
                                                 echo '<span class="badge badge-success">Hadir</span>';
@@ -96,14 +163,6 @@ $result = $stmt->get_result();
                                                 echo '<span class="badge badge-danger">Alpha</span>';
                                             }
                                             ?>
-                                        </td>
-                                        <td>
-                                            <select class="form-control form-control-sm status-select" data-id="<?= $row['id']; ?>">
-                                                <option value="Hadir" <?= $row['status'] == 'Hadir' ? 'selected' : ''; ?>>Hadir</option>
-                                                <option value="Alpha" <?= $row['status'] == 'Alpha' ? 'selected' : ''; ?>>Alpha</option>
-                                                <option value="Sakit" <?= $row['status'] == 'Sakit' ? 'selected' : ''; ?>>Sakit</option>
-                                                <option value="Izin" <?= $row['status'] == 'Izin' ? 'selected' : ''; ?>>Izin</option>
-                                            </select>
                                         </td>
                                     </tr>
                                     <?php endwhile; ?>
@@ -119,49 +178,37 @@ $result = $stmt->get_result();
     </div>
 </div>
 
-<script src="../vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="../vendor/jquery-easing/jquery.easing.min.js"></script>
-<script src="../js/sb-admin-2.min.js"></script>
-<script src="../vendor/datatables/jquery.dataTables.min.js"></script>
-<script src="../vendor/datatables/dataTables.bootstrap4.min.js"></script>
+<!-- DataTables -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+<!-- DataTables Buttons -->
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap4.min.css">
+
+<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+
+<!-- DataTables Buttons -->
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap4.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+
 
 <script>
 $(document).ready(function() {
-    $('#dataTable').DataTable();
-
-    $('.status-select').change(function() {
-        var id = $(this).data('id');
-        var status = $(this).val();
-        var row = $('#row-' + id);
-
-        $.ajax({
-            url: 'update_status.php',
-            type: 'POST',
-            data: { id: id, status: status },
-            success: function(res) {
-                console.log(res); 
-                try {
-                    var data = (typeof res === "string") ? JSON.parse(res) : res;
-                    if (data.success) {
-                        var badgeClass = (status === 'Hadir') ? 'badge-success' 
-                                        : (status === 'Sakit') ? 'badge-warning' 
-                                        : (status === 'Izin') ? 'badge-info' 
-                                        : 'badge-danger';
-                        row.find('.status-text').html('<span class="badge '+badgeClass+'">'+status+'</span>');
-                        $('#alert-message').html('<div class="alert alert-success">'+data.message+'</div>');
-                    } else {
-                        $('#alert-message').html('<div class="alert alert-danger">'+data.message+'</div>');
-                    }
-                } catch (e) {
-                    $('#alert-message').html('<div class="alert alert-danger">Terjadi kesalahan server.</div>');
-                }
-            },
-            error: function() {
-                $('#alert-message').html('<div class="alert alert-danger">Gagal terhubung ke server.</div>');
-            }
-        });
+    $('#dataTable').DataTable({
+        dom: '<"row mb-3"<"col-md-6"l><"col-md-6 text-right"B>>frtip',
+        buttons: [
+            { extend: 'excelHtml5', className: 'btn btn-success btn-sm', text: '<i class="fas fa-file-excel"></i> Excel' },
+            { extend: 'pdfHtml5', className: 'btn btn-danger btn-sm', text: '<i class="fas fa-file-pdf"></i> PDF' },
+            { extend: 'print', className: 'btn btn-info btn-sm', text: '<i class="fas fa-print"></i> Print' }
+        ]
     });
 });
+
 </script>
 
 </body>

@@ -1,27 +1,30 @@
 <?php
-// Session dan koneksi
+// Pastikan session aktif
 if (session_status() == PHP_SESSION_NONE) session_start();
 include '../../config/koneksi.php';
 include '../../vendor/phpqrcode-master/qrlib.php';
 
-// Proses simpan
+// Proses simpan data
 if (isset($_POST['simpan'])) {
     $nisn        = mysqli_real_escape_string($conn, trim($_POST['nisn']));
     $nama        = mysqli_real_escape_string($conn, trim($_POST['nama']));
-    $ttl         = mysqli_real_escape_string($conn, trim($_POST['ttl']));
+    $tempat_lahir = mysqli_real_escape_string($conn, trim($_POST['tempat_lahir']));
+    $tanggal_lahir = mysqli_real_escape_string($conn, trim($_POST['tanggal_lahir']));
     $jk          = mysqli_real_escape_string($conn, $_POST['jk']);
     $kelas       = mysqli_real_escape_string($conn, $_POST['kelas']);
     $wali_kelas  = mysqli_real_escape_string($conn, trim($_POST['wali_kelas']));
     $telp        = mysqli_real_escape_string($conn, trim($_POST['telp']));
 
-    // Validasi NISN angka
+    // Gabungkan tempat dan tanggal lahir
+    $ttl = $tempat_lahir . ', ' . date('d F Y', strtotime($tanggal_lahir));
+
+    // Validasi NISN dan No Telp angka
     if (!ctype_digit($nisn)) {
         $_SESSION['alert'] = ['type' => 'danger', 'message' => 'NISN harus berupa angka!'];
         header("Location: tambah.php");
         exit;
     }
 
-    // Validasi no telp angka
     if (!ctype_digit($telp)) {
         $_SESSION['alert'] = ['type' => 'danger', 'message' => 'No Telp harus berupa angka!'];
         header("Location: tambah.php");
@@ -40,7 +43,7 @@ if (isset($_POST['simpan'])) {
     $path = "qrcodes/" . $kelas . "/";
     if (!file_exists($path)) mkdir($path, 0777, true);
 
-    // Data QR → simpan NISN|Kelas biar mudah parsing
+    // Data QR
     $data_qr = $nisn . "|" . $kelas;
     $tempQr = $path . "temp_" . $nisn . ".png";
     QRcode::png($data_qr, $tempQr, QR_ECLEVEL_L, 6);
@@ -50,16 +53,14 @@ if (isset($_POST['simpan'])) {
     $qrWidth = imagesx($qr);
     $qrHeight = imagesy($qr);
 
-    // Ukuran baru (tambahkan ruang untuk teks)
     $newHeight = $qrHeight + 50;
     $img = imagecreatetruecolor($qrWidth, $newHeight);
     $white = imagecolorallocate($img, 255, 255, 255);
     imagefill($img, 0, 0, $white);
     imagecopy($img, $qr, 0, 0, 0, 0, $qrWidth, $qrHeight);
 
-    // Tulis teks nama (auto resize)
     $textColor = imagecolorallocate($img, 0, 0, 0);
-    $fontFile = __DIR__ . "/../../assets/fonts/arial.ttf"; // pastikan font tersedia
+    $fontFile = __DIR__ . "/../../assets/fonts/arial.ttf";
     $text = $nama;
 
     if (file_exists($fontFile)) {
@@ -71,7 +72,7 @@ if (isset($_POST['simpan'])) {
             $bbox = imagettfbbox($fontSize, 0, $fontFile, $text);
             $textWidth = $bbox[2] - $bbox[0];
             if ($textWidth > $qrWidth - 10) {
-                $fontSize--; // perkecil font
+                $fontSize--;
             } else {
                 break;
             }
@@ -81,7 +82,6 @@ if (isset($_POST['simpan'])) {
         $y = $qrHeight + 30;
         imagettftext($img, $fontSize, 0, $x, $y, $textColor, $fontFile, $text);
     } else {
-        // Fallback imagestring
         $fontSize = 4;
         $fontHeight = imagefontheight($fontSize);
         $fontWidth = imagefontwidth($fontSize);
@@ -89,7 +89,6 @@ if (isset($_POST['simpan'])) {
         imagestring($img, $fontSize, ($qrWidth - $textWidth) / 2, $qrHeight + 10, $text, $textColor);
     }
 
-    // Simpan QR final
     $file = $path . $nisn . ".png";
     imagepng($img, $file);
     imagedestroy($img);
@@ -135,9 +134,15 @@ include '../../template/sidebar.php';
                             <input type="text" name="nama" id="nama" class="form-control" required>
                         </div>
 
-                        <div class="form-group mb-3">
-                            <label for="ttl">Tempat, Tanggal Lahir</label>
-                            <input type="text" name="ttl" id="ttl" class="form-control" placeholder="Contoh: Jakarta, 01 Januari 2000" required>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="tempat_lahir">Tempat Lahir</label>
+                                <input type="text" name="tempat_lahir" id="tempat_lahir" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="tanggal_lahir">Tanggal Lahir</label>
+                                <input type="text" name="tanggal_lahir" id="tanggal_lahir" class="form-control" placeholder="Klik untuk pilih tanggal" required>
+                            </div>
                         </div>
 
                         <div class="form-group mb-3">
@@ -163,7 +168,7 @@ include '../../template/sidebar.php';
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="wali_kelas">Wali Kelas</label> 
+                            <label for="wali_kelas">Wali Kelas</label>
                             <select name="wali_kelas" id="wali_kelas" class="form-control" required>
                                 <option value="">-- Pilih Wali Kelas --</option>
                                 <?php
@@ -191,7 +196,25 @@ include '../../template/sidebar.php';
                     </form>
                 </div>
             </div>
-        </div> 
+        </div>
     </div>
+
     <?php include '../../template/footer.php'; ?>
 </div>
+
+<!-- Tambahkan jQuery UI Datepicker -->
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
+<script>
+$(function() {
+    $("#tanggal_lahir").datepicker({
+        dateFormat: "dd MM yy",
+        changeMonth: true,
+        changeYear: true,
+        yearRange: "1970:2025",
+        showAnim: "slideDown"
+    });
+});
+</script>
