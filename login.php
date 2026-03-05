@@ -4,125 +4,132 @@ include 'config/koneksi.php';
 
 $err = '';
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $username = trim($_POST['username'] ?? '');
-    $password = trim($_POST['password'] ?? '');
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    // Jika input kosong
+    $username = trim($_POST['username']);
+    $password = trim($_POST['password']);
+
     if ($username === '' || $password === '') {
         $err = 'Username / NISN dan Password wajib diisi!';
     } else {
-        // ===========================
-        // 1. Cek di tabel users (admin)
-        // ===========================
-        $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
-        $stmt->bind_param('s', $username);
+
+        /* ===============================
+           1️⃣ LOGIN ADMIN
+        =============================== */
+        $stmt = $conn->prepare("
+            SELECT * FROM users WHERE username = ?
+        ");
+        $stmt->bind_param("s", $username);
         $stmt->execute();
         $res = $stmt->get_result();
 
-        if ($user = $res->fetch_assoc()) {
-            if (password_verify($password, $user['password'])) {
+        if ($admin = $res->fetch_assoc()) {
+            if (password_verify($password, $admin['password'])) {
                 $_SESSION['user'] = [
-                    'id'       => $user['id'],
-                    'nama'     => $user['nama_lengkap'],
-                    'role'     => $user['role'],
-                    'username' => $user['username']
+                    'id'       => $admin['id'],
+                    'nama'     => $admin['nama_lengkap'],
+                    'username' => $admin['username'],
+                    'role'     => 'admin'
                 ];
-
-                if ($user['role'] === 'admin') {
-                    header("Location: admin/dashboard.php");
-                } elseif ($user['role'] === 'siswa') {
-                    header("Location: siswa/index.php");
-                }
+                header("Location: admin/dashboard.php");
                 exit;
             } else {
                 $err = 'Password admin salah!';
             }
+
         } else {
-            // ===========================
-            // 2. Cek di tabel guru
-            // ===========================
-            $stmt = $conn->prepare("SELECT * FROM guru WHERE username = ?");
-            $stmt->bind_param('s', $username);
-            $stmt->execute();
-            $res = $stmt->get_result();
 
-            if ($guru = $res->fetch_assoc()) {
-                if (md5($password) === $guru['password']) {
-                    $_SESSION['user'] = [
-                        'id'       => $guru['id'],
-                        'nama'     => $guru['nama'],
-                        'role'     => 'guru',
-                        'username' => $guru['username']
-                    ];
-                    header("Location: guru/index.php");
+        /* ===============================
+           2️⃣ LOGIN GURU (+ WALI KELAS)
+        =============================== */
+        $stmt = $conn->prepare("
+            SELECT * FROM guru WHERE username = ?
+        ");
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        $res = $stmt->get_result();
+
+        if ($guru = $res->fetch_assoc()) {
+
+            // ❗ sementara md5 (SARAN: ganti password_hash)
+            if (md5($password) === $guru['password']) {
+
+                // ROLE DEFAULT = GURU
+                $_SESSION['user'] = [
+                    'id'       => $guru['id'],
+                    'nama'     => $guru['nama'],
+                    'username' => $guru['username'],
+                    'role'     => 'guru'
+                ];
+
+                /* ===============================
+                   🔍 CEK APAKAH GURU INI WALI KELAS
+                =============================== */
+                $cekWali = $conn->prepare("
+                    SELECT kelas FROM wali_kelas WHERE guru_id = ?
+                ");
+                $cekWali->bind_param("i", $guru['id']);
+                $cekWali->execute();
+                $resWali = $cekWali->get_result();
+
+                if ($wali = $resWali->fetch_assoc()) {
+                    $_SESSION['user']['role']  = 'walikelas';
+                    $_SESSION['user']['kelas'] = $wali['kelas'];
+
+                    header("Location: walikelas/index.php");
                     exit;
-                } else {
-                    $err = 'Password guru salah!';
                 }
+
+                // Jika BUKAN wali kelas
+                header("Location: guru/index.php");
+                exit;
+
             } else {
-                // ===========================
-                // 3. Cek di tabel wali_kelas
-                // ===========================
-                $stmt = $conn->prepare("SELECT * FROM wali_kelas WHERE username = ?");
-                $stmt->bind_param('s', $username);
-                $stmt->execute();
-                $res = $stmt->get_result();
-
-                if ($wali = $res->fetch_assoc()) {
-                    if (md5($password) === $wali['password']) {
-                        $_SESSION['user'] = [
-                            'id'       => $wali['id'],
-                            'nama'     => $wali['nama'],
-                            'role'     => 'walikelas',
-                            'username' => $wali['username'],
-                            'kelas'    => $wali['kelas']
-                        ];
-                        header("Location: walikelas/index.php");
-                        exit;
-                    } else {
-                        $err = 'Password wali kelas salah!';
-                    }
-                } else {
-                    // ===========================
-                    // 4. Cek di tabel siswa
-                    // ===========================
-                    $stmt = $conn->prepare("SELECT * FROM siswa WHERE nisn = ?");
-                    $stmt->bind_param('s', $username);
-                    $stmt->execute();
-                    $res = $stmt->get_result();
-
-                    if ($siswa = $res->fetch_assoc()) {
-                        // Pastikan password sudah diatur
-                        if (!empty($siswa['password'])) {
-                            // Verifikasi password hash
-                            if (password_verify($password, $siswa['password'])) {
-                                $_SESSION['user'] = [
-                                    'id'       => $siswa['id'],
-                                    'nama'     => $siswa['nama'],
-                                    'nisn'     => $siswa['nisn'],
-                                    'kelas'    => $siswa['kelas'],
-                                    'role'     => 'siswa',
-                                    'username' => $siswa['nisn']
-                                ];
-
-                                header("Location: siswa/index.php");
-                                exit;
-                            } else {
-                                $err = 'Password siswa salah!';
-                            }
-                        } else {
-                            $err = 'Password siswa belum diatur. Hubungi admin!';
-                        }
-                    } else {
-                        $err = 'Username (NISN) tidak ditemukan!';
-                    }
-                }
+                $err = 'Password guru salah!';
             }
-        }
+
+        } else {
+
+   /* ===============================
+   3️⃣ LOGIN SISWA (FINAL & AMAN)
+=============================== */
+$stmt = $conn->prepare("
+    SELECT id, nisn, nama, kelas, password 
+    FROM siswa 
+    WHERE nisn = ?
+");
+$stmt->bind_param("s", $username);
+$stmt->execute();
+$res = $stmt->get_result();
+
+if ($siswa = $res->fetch_assoc()) {
+
+    if (!empty($siswa['password']) && password_verify($password, $siswa['password'])) {
+
+        $_SESSION['user'] = [
+            'id'       => $siswa['id'],
+            'nisn'     => $siswa['nisn'],   // ✅ INI KUNCI UTAMA
+            'nama'     => $siswa['nama'],
+            'kelas'    => $siswa['kelas'],
+            'username' => $siswa['nisn'],   // opsional (buat konsistensi)
+            'role'     => 'siswa'
+        ];
+
+        header("Location: siswa/index.php");
+        exit;
+
+    } else {
+        $err = 'Password siswa salah / belum diatur!';
     }
+
+} else {
+    $err = 'Username / NISN tidak ditemukan!';
+}
+
+        }}}
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="id">

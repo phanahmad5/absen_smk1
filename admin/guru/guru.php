@@ -1,97 +1,146 @@
 <?php
-// Pastikan session aktif
-if (session_status() == PHP_SESSION_NONE) session_start();
-
-// Koneksi database
+session_start();
 include '../../config/koneksi.php';
-
-// Include header (sudah ada <html> dan mulai wrapper)
 include '../../template/header.php';
 
-// Include sidebar (di dalam wrapper)
-include '../../template/sidebar.php';
-
-// Ambil data guru
-$query = mysqli_query($conn, "SELECT * FROM guru ORDER BY nama ASC");
+// Query data guru + status wali kelas
+$q = $conn->query("
+    SELECT g.id, g.nama, g.nip, g.username, w.kelas
+    FROM guru g
+    LEFT JOIN wali_kelas w ON g.id = w.guru_id
+    ORDER BY g.nama ASC
+");
 ?>
 
-<!-- Content Wrapper -->
-<div id="content-wrapper" class="d-flex flex-column">
+<style>
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+}
 
-    <!-- Main Content -->
+/* WRAPPER UTAMA */
+#wrapper {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+}
+
+/* CONTENT AREA */
+#content {
+    flex: 1;
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background-color: #f8f9fc;
+}
+
+/* HILANGKAN PADDING DEFAULT */
+.container-fluid {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* ISI KONTEN */
+.content-inner {
+    padding: 20px;
+}
+</style>
+
+<div id="wrapper">
+
+    <!-- SIDEBAR -->
+    <?php include '../../template/sidebar.php'; ?>
+
+    <!-- CONTENT -->
     <div id="content">
+        <?php include '../../template/topbar.php'; ?>
 
-        <div class="container-fluid mt-4">
+        <div class="container-fluid">
+            <div class="content-inner">
 
-            <!-- Header + tombol tambah -->
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3 class="m-0">Data Guru</h3>
-                <a href="tambah_guru.php" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Tambah Guru
-                </a>
-            </div>
+                <!-- HEADER HALAMAN -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3 class="mb-0">Data Guru</h3>
+                    <a href="tambah_guru.php" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Tambah Guru
+                    </a>
+                </div>
 
-            <!-- Card Data -->
-            <div class="card shadow">
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table id="dataGuru" class="table table-bordered table-hover align-middle" width="100%">
-                            <thead class="table-light text-center">
-                                <tr>
-                                    <th width="50px">No</th>
-                                    <th>Nama Guru</th>
-                                    <th>NIP</th>
-                                    <th>Username</th>
-                                    <th width="130px">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php 
-                                $no=1; 
-                                while($g = mysqli_fetch_array($query)){ ?>
-                                <tr>
-                                    <td class="text-center"><?= $no++ ?></td>
-                                    <td><?= $g['nama'] ?></td>
-                                    <td><?= $g['nip'] ?></td>
-                                    <td><?= $g['username'] ?></td>
-                                    <td class="text-center">
-                                        <a href="edit_guru.php?id=<?= $g['id'] ?>" class="btn btn-sm btn-warning">
-                                            <i class="fas fa-edit"></i> Edit
-                                        </a>
-                                        
-                                    </td>
-                                </tr>
-                                <?php } ?>
-                            </tbody>
-                        </table>
+                <!-- CARD -->
+                <div class="card shadow-sm">
+                    <div class="card-body">
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover align-middle" id="tabelGuru">
+                                <thead class="table-light text-center">
+                                    <tr>
+                                        <th width="50">No</th>
+                                        <th>Nama Guru</th>
+                                        <th>NIP</th>
+                                        <th>Username</th>
+                                        <th>Status</th>
+                                        <th width="120">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                <?php $no = 1; while ($d = $q->fetch_assoc()): ?>
+                                    <tr>
+                                        <td class="text-center"><?= $no++ ?></td>
+                                        <td><?= htmlspecialchars($d['nama']) ?></td>
+                                        <td><?= htmlspecialchars($d['nip']) ?></td>
+                                        <td><?= htmlspecialchars($d['username']) ?></td>
+                                        <td class="text-center">
+                                            <?php if ($d['kelas']): ?>
+                                                <span class="badge bg-success">
+                                                    Wali Kelas <?= htmlspecialchars($d['kelas']) ?>
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="badge bg-secondary">
+                                                    Bukan Wali Kelas
+                                                </span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="text-center">
+                                            <a href="edit_guru.php?id=<?= $d['id'] ?>" class="btn btn-sm btn-warning">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="hapus_guru.php?id=<?= $d['id'] ?>"
+                                               onclick="return confirm('Yakin hapus guru ini?')"
+                                               class="btn btn-sm btn-danger">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                <?php endwhile; ?>
+                                </tbody>
+                            </table>
+                        </div>
+
                     </div>
                 </div>
-            </div>
 
-        </div> <!-- /.container-fluid -->
+            </div>
+        </div>
 
     </div>
-    <!-- End of Main Content -->
-
-    <?php include '../../template/footer.php'; ?>
-
 </div>
-<!-- End of Content Wrapper -->
 
-</div> <!-- End of Page Wrapper -->
+<?php include '../../template/footer.php'; ?>
 
-<!-- DataTables Script -->
 <script>
-$(document).ready(function(){
-    $('#dataGuru').DataTable({
-        "pageLength": 10,
-        "language": {
-            "lengthMenu": "Tampilkan _MENU_ data",
-            "search": "Cari:",
-            "zeroRecords": "Data tidak ditemukan",
-            "info": "Menampilkan _START_ - _END_ dari _TOTAL_ data",
-            "infoEmpty": "Tidak ada data tersedia",
-            "infoFiltered": "(disaring dari _MAX_ total data)"
+$(document).ready(function () {
+    $('#tabelGuru').DataTable({
+        responsive: true,
+        language: {
+            search: "Cari:",
+            lengthMenu: "Tampilkan _MENU_ data",
+            info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
+            paginate: {
+                next: "Next",
+                previous: "Prev"
+            }
         }
     });
 });

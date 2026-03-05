@@ -1,172 +1,172 @@
 <?php
 session_start();
-include '../config/koneksi.php';
+require '../config/koneksi.php';
 
-// Cek login guru
+// ===============================
+// VALIDASI LOGIN GURU
+// ===============================
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'guru') {
     echo "<script>alert('Akses ditolak'); window.location='../login.php';</script>";
     exit;
 }
 
-$id_guru = $_SESSION['user']['id'];
-$kelas = $_GET['kelas'] ?? '';
-$id_mapel = isset($_GET['id_mapel']) ? (int) $_GET['id_mapel'] : 0;
+date_default_timezone_set('Asia/Jakarta');
 
-// Ambil nama mapel dari tabel mapel
-$mapel_nama = '';
-if ($id_mapel > 0) {
-    $stmtMapel = $conn->prepare("SELECT nama_mapel FROM mapel WHERE id = ?");
-    $stmtMapel->bind_param('i', $id_mapel);
-    $stmtMapel->execute();
-    $resMapel = $stmtMapel->get_result();
-    if ($row = $resMapel->fetch_assoc()) {
-        $mapel_nama = $row['nama_mapel'];
-    }
-    $stmtMapel->close();
+// ===============================
+// AMBIL PARAMETER
+// ===============================
+$pertemuan_id = (int)($_GET['pertemuan_id'] ?? 0);
+if ($pertemuan_id === 0) {
+    exit('Pertemuan tidak valid');
 }
 
-// Waktu & hari sekarang
-date_default_timezone_set('Asia/Jakarta');
-$hariConvert = [
-    'Sunday' => 'Minggu',
-    'Monday' => 'Senin',
-    'Tuesday' => 'Selasa',
-    'Wednesday' => 'Rabu',
-    'Thursday' => 'Kamis',
-    'Friday' => 'Jumat',
-    'Saturday' => 'Sabtu'
-];
-$hariSekarangEng = date('l');
-$hariSekarang = $hariConvert[$hariSekarangEng] ?? $hariSekarangEng;
+// ===============================
+// AMBIL DATA PERTEMUAN + JADWAL
+// ===============================
+$stmt = $conn->prepare("
+    SELECT 
+        p.id AS pertemuan_id,
+        p.tanggal,
+        p.status,
+        j.kelas,
+        j.mapel AS mapel_id,
+        m.nama_mapel,
+        j.jam_mulai,
+        j.jam_selesai
+    FROM pertemuan p
+    JOIN jadwal j ON p.jadwal_id = j.id
+    JOIN mapel m ON j.mapel = m.id
+    WHERE p.id = ?
+");
+$stmt->bind_param("i", $pertemuan_id);
+$stmt->execute();
+$data = $stmt->get_result()->fetch_assoc();
+
+if (!$data) {
+    exit('Pertemuan tidak ditemukan');
+}
+
+// ===============================
+// VALIDASI PERTEMUAN AKTIF
+// ===============================
+$hariIni = date('Y-m-d');
 $jamSekarang = date('H:i:s');
 
-$toleransiMenit = 15;
-$waktuSekarangTimestamp = strtotime($jamSekarang);
-
-// Cek jadwal aktif
-$stmtJadwal = $conn->prepare("
-    SELECT *, 
-           TIME(jam_mulai) AS mulai, 
-           TIME(jam_selesai) AS selesai
-    FROM jadwal
-    WHERE id_guru = ? 
-      AND kelas = ? 
-      AND mapel = ? 
-      AND hari = ?
-");
-$stmtJadwal->bind_param('isis', $id_guru, $kelas, $id_mapel, $hariSekarang);
-$stmtJadwal->execute();
-$resJadwal = $stmtJadwal->get_result();
-
-$jadwalAktif = false;
-if ($jadwal = $resJadwal->fetch_assoc()) {
-    $startTime = strtotime($jadwal['mulai']) - ($toleransiMenit * 60);
-    $endTime   = strtotime($jadwal['selesai']) + ($toleransiMenit * 60);
-
-    if ($waktuSekarangTimestamp >= $startTime && $waktuSekarangTimestamp <= $endTime) {
-        $jadwalAktif = true;
-    }
+if ($data['tanggal'] !== $hariIni || $data['status'] !== 'dibuka') {
+    exit('Pertemuan tidak aktif');
 }
-$stmtJadwal->close();
+
+$now   = strtotime($jamSekarang);
+$start = strtotime($data['jam_mulai']) - (15 * 60);
+$end   = strtotime($data['jam_selesai']) + (15 * 60);
+
+$bolehScan = !($now < $start || $now > $end);
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <title>Scan QR Code</title>
+    <meta charset="UTF-8">
+    <title>Scan QR Absensi</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin-top: 30px; }
-        #reader { width: 320px; margin: auto; }
-        #status { margin-top: 10px; font-weight: bold; color: green; }
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 30px;
+        }
+        #reader {
+            width: 320px;
+            margin: auto;
+        }
+        #status {
+            margin-top: 10px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
 
-<h3>Scan QR Code Siswa - <?= htmlspecialchars($mapel_nama) ?> (<?= htmlspecialchars($kelas) ?>)</h3>
+<h3>
+    Scan QR Code Siswa<br>
+    <?= htmlspecialchars($data['nama_mapel']) ?> (<?= htmlspecialchars($data['kelas']) ?>)
+</h3>
 
 <p>
-    <a href="lihat_absensi.php?kelas=<?= urlencode($kelas) ?>&id_mapel=<?= urlencode($id_mapel) ?>" 
-       style="display:inline-block; padding:8px 12px; background:#007bff; color:white; text-decoration:none; border-radius:4px;">
-        📄 Lihat Data Absensi
-    </a>
+    Tanggal: <?= date('d-m-Y') ?> |
+    Jam: <?= htmlspecialchars($data['jam_mulai']) ?> - <?= htmlspecialchars($data['jam_selesai']) ?>
 </p>
 
-<?php if (!$jadwalAktif): ?>
-    <div style="color: red; font-weight: bold;">
-        Tidak dapat melakukan absensi! <br>
-        Jadwal mengajar Anda saat ini tidak aktif. <br>
-        Hari: <?= htmlspecialchars($hariSekarang) ?> | Jam: <?= date('H:i') ?>
+<?php if (!$bolehScan): ?>
+    <div style="color:red; font-weight:bold;">
+        Absensi di luar jam pertemuan
     </div>
 <?php else: ?>
-    <div id="reader"></div>
-    <div id="status"></div>
-    <audio id="beep" src="../assets/sounds/beep.mp3" preload="auto"></audio>
 
-    <script>
-    const kelasDefault = "<?= addslashes($kelas) ?>";
-    const idMapel = "<?= $id_mapel ?>";
-    const mapelNama = "<?= addslashes($mapel_nama) ?>";
-    const reader = new Html5Qrcode("reader");
-    const beep = document.getElementById('beep');
+<div id="reader"></div>
+<div id="status"></div>
+<audio id="beep" src="../assets/sounds/beep.mp3" preload="auto"></audio>
 
-    function scanQRCode() {
-        reader.start(
-            { facingMode: "environment" },
-            { fps: 10, qrbox: 250 },
-            async (decodedText) => {
-                reader.pause();
+<script>
+const pertemuanId = "<?= $pertemuan_id ?>";
+const reader = new Html5Qrcode("reader");
+const statusEl = document.getElementById('status');
+const beep = document.getElementById('beep');
 
-                let nisn = "";
-                let kelasQr = kelasDefault;
+function startScan() {
+    reader.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        async (decodedText) => {
+            reader.pause();
 
-                // Coba parse JSON
-                try {
-                    const data = JSON.parse(decodedText);
-                    nisn = data.nisn ?? "";
-                    if (data.kelas) kelasQr = data.kelas;
-                } catch {
-                    // Kalau bukan JSON, asumsikan format "nisn|kelas"
-                    if (decodedText.includes("|")) {
-                        const parts = decodedText.split("|");
-                        nisn = parts[0] ?? "";
-                        if (parts[1]) kelasQr = parts[1];
-                    } else {
-                        nisn = decodedText;
-                    }
+            let nisn = "";
+
+            // Parse QR
+            try {
+                const data = JSON.parse(decodedText);
+                nisn = data.nisn ?? "";
+            } catch {
+                if (decodedText.includes("|")) {
+                    nisn = decodedText.split("|")[0];
+                } else {
+                    nisn = decodedText;
                 }
+            }
 
-                if (!nisn) {
-                    alert("QR Code tidak valid!");
-                    reader.resume();
-                    return;
-                }
-
-                const url = `simpan_absensi.php?nisn=${encodeURIComponent(nisn)}&kelas=${encodeURIComponent(kelasQr)}&id_mapel=${idMapel}&mapel_nama=${encodeURIComponent(mapelNama)}`;
-                document.getElementById('status').textContent = "Memproses absensi...";
-
-                try {
-                    const res = await fetch(url);
-                    const responseText = await res.text();
-
-                    beep.currentTime = 0;
-                    beep.play().catch(e => console.warn("Beep gagal:", e));
-
-                    alert(responseText);
-                } catch (err) {
-                    alert("Terjadi kesalahan: " + err);
-                }
-
-                document.getElementById('status').textContent = "";
+            if (!nisn) {
+                alert("QR Code tidak valid");
                 reader.resume();
-            },
-            () => {}
-        ).catch((err) => {
-            alert("Gagal mengakses kamera: " + err);
-        });
-    }
+                return;
+            }
 
-    scanQRCode();
-    </script>
+            statusEl.textContent = "Memproses absensi...";
+
+            try {
+                const res = await fetch(
+                    `simpan_absensi.php?pertemuan_id=${pertemuanId}&nisn=${encodeURIComponent(nisn)}`
+                );
+                const text = await res.text();
+
+                beep.currentTime = 0;
+                beep.play().catch(() => {});
+
+                alert(text);
+            } catch (err) {
+                alert("Terjadi kesalahan");
+            }
+
+            statusEl.textContent = "";
+            reader.resume();
+        },
+        () => {}
+    ).catch(err => {
+        alert("Gagal mengakses kamera: " + err);
+    });
+}
+
+startScan();
+</script>
+
 <?php endif; ?>
 
 </body>

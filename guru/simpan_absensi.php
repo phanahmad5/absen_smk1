@@ -1,85 +1,156 @@
 <?php
+session_start();
 date_default_timezone_set('Asia/Jakarta');
-include '../config/koneksi.php';
+require '../config/koneksi.php';
 
-// Ambil parameter dari GET
-$nisn       = trim($_GET['nisn'] ?? '');
-$kelas      = trim($_GET['kelas'] ?? '');
-$mapel_id   = (int) ($_GET['id_mapel'] ?? 0);
-$mapel      = trim($_GET['mapel_nama'] ?? '');
-
-// Validasi
-if ($nisn === '' || $kelas === '' || $mapel_id === 0 || $mapel === '') {
-    echo "Data absensi tidak lengkap!";
-    exit;
+// ===============================
+// VALIDASI LOGIN GURU
+// ===============================
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'guru') {
+    exit('Akses ditolak');
 }
 
-// Cek siswa
-$stmt = $conn->prepare("SELECT * FROM siswa WHERE nisn = ?");
-$stmt->bind_param("s", $nisn);
-$stmt->execute();
-$siswaResult = $stmt->get_result();
+// ===============================
+// AMBIL PARAMETER
+// ===============================
+$pertemuan_id = (int)($_GET['pertemuan_id'] ?? 0);
+$nisn         = trim($_GET['nisn'] ?? '');
 
-if ($siswaResult->num_rows === 0) {
-    echo "Siswa dengan NISN $nisn tidak ditemukan!";
-    exit;
+if ($pertemuan_id === 0 || $nisn === '') {
+    exit('Data absensi tidak lengkap');
 }
-$siswa = $siswaResult->fetch_assoc();
 
-// Cek absensi sebelumnya
-$tanggal = date('Y-m-d');
+// ===============================
+// AMBIL DATA PERTEMUAN + JADWAL
+// ===============================
 $stmt = $conn->prepare("
-    SELECT * FROM absensi 
-    WHERE nisn = ? AND tanggal = ? AND mapel_id = ?
+    SELECT 
+        p.id AS pertemuan_id,
+        p.tanggal,
+        p.status,
+        j.kelas,
+        j.mapel AS mapel_id,
+        m.nama_mapel,
+        j.jam_mulai,
+        j.jam_selesai
+    FROM pertemuan p
+    JOIN jadwal j ON p.jadwal_id = j.id
+    JOIN mapel m ON j.mapel = m.id
+    WHERE p.id = ?
 ");
-$stmt->bind_param("ssi", $nisn, $tanggal, $mapel_id);
+$stmt->bind_param("i", $pertemuan_id);
 $stmt->execute();
-$cekResult = $stmt->get_result();
+$pertemuan = $stmt->get_result()->fetch_assoc();
 
-if ($cekResult->num_rows > 0) {
-    echo "Halo {$siswa['nama']}, kamu sudah absen hari ini untuk mata pelajaran $mapel!";
-    exit;
+if (!$pertemuan) {
+    exit('Pertemuan tidak ditemukan');
 }
 
-// Hitung status hadir/terlambat
+// ===============================
+// VALIDASI PERTEMUAN AKTIF
+// ===============================
+$hariIni     = date('Y-m-d');
 $jamSekarang = date('H:i:s');
 
-// Ambil jam mulai mapel dari tabel jadwal (optional, supaya lebih akurat)
-$stmt = $conn->prepare("
-    SELECT jam_mulai 
-    FROM jadwal 
-    WHERE kelas = ? AND mapel = ? 
-    ORDER BY jam_mulai ASC LIMIT 1
-");
-$stmt->bind_param("si", $kelas, $mapel_id);
-$stmt->execute();
-$resJadwal = $stmt->get_result();
-$jadwal = $resJadwal->fetch_assoc();
-
-$status = "Hadir";
-if ($jadwal) {
-    $waktuMulai  = strtotime($jadwal['jam_mulai']);
-    $waktuScan   = strtotime($jamSekarang);
-    $selisihMenit = floor(($waktuScan - $waktuMulai) / 60);
-    if ($selisihMenit > 15) {
-        $status = "Terlambat";
-    }
+if ($pertemuan['tanggal'] !== $hariIni || $pertemuan['status'] !== 'dibuka') {
+    exit('Pertemuan tidak aktif');
 }
 
-// Simpan absensi
+$now   = strtotime($jamSekarang);
+$start = strtotime($pertemuan['jam_mulai']) - (15 * 60);
+$end   = strtotime($pertemuan['jam_selesai']) + (15 * 60);
+
+if ($now < $start || $now > $end) {
+    exit('Absensi di luar jam pertemuan');
+}
+
+// ===============================
+// CEK SISWA + KELAS
+// ===============================
 $stmt = $conn->prepare("
-    INSERT INTO absensi (nisn, mapel_id, mata_pelajaran, kelas, tanggal, jam, status) 
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    SELECT nama, kelas 
+    FROM siswa 
+    WHERE nisn = ?
 ");
-$stmt->bind_param("sisssss", $nisn, $mapel_id, $mapel, $kelas, $tanggal, $jamSekarang, $status);
+$stmt->bind_param("s", $nisn);
+$stmt->execute();
+$resSiswa = $stmt->get_result();
+
+if ($resSiswa->num_rows === 0) {
+    exit("Siswa dengan NISN $nisn tidak ditemukan");
+}
+
+$siswa = $resSiswa->fetch_assoc();
+
+// ===============================
+// VALIDASI KELAS SISWA (INI KUNCI UTAMA 🔒)
+// ===============================
+if ($siswa['kelas'] !== $pertemuan['kelas']) {
+    exit(
+        "❌ Absensi ditolak!<br>
+        Pertemuan ini untuk kelas <b>{$pertemuan['kelas']}</b>,<br>
+        bukan kelas <b>{$siswa['kelas']}</b>."
+    );
+}
+
+// ===============================
+// CEK ABSENSI GANDA
+// ===============================
+$stmt = $conn->prepare("
+    SELECT id FROM absensi 
+    WHERE pertemuan_id = ? AND nisn = ?
+");
+$stmt->bind_param("is", $pertemuan_id, $nisn);
+$stmt->execute();
+
+if ($stmt->get_result()->num_rows > 0) {
+    exit("Halo {$siswa['nama']}, kamu sudah absen pada pertemuan ini");
+}
+
+// ===============================
+// HITUNG STATUS (HADIR / TERLAMBAT)
+// ===============================
+$status = 'Hadir';
+$selisihMenit = floor(($now - strtotime($pertemuan['jam_mulai'])) / 60);
+
+if ($selisihMenit > 15) {
+    $status = 'Terlambat';
+}
+
+// ===============================
+// SIMPAN ABSENSI
+// ===============================
+$stmt = $conn->prepare("
+    INSERT INTO absensi (
+        pertemuan_id,
+        nisn,
+        mapel_id,
+        mata_pelajaran,
+        kelas,
+        tanggal,
+        jam,
+        status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+");
+
+$stmt->bind_param(
+    "isisssss",
+    $pertemuan_id,
+    $nisn,
+    $pertemuan['mapel_id'],
+    $pertemuan['nama_mapel'],
+    $pertemuan['kelas'],
+    $hariIni,
+    $jamSekarang,
+    $status
+);
 
 if ($stmt->execute()) {
     if ($status === 'Terlambat') {
-        echo "Maaf {$siswa['nama']}, kamu terlambat untuk pelajaran $mapel.";
+        echo "⚠️ {$siswa['nama']} tercatat TERLAMBAT pada {$pertemuan['nama_mapel']}";
     } else {
-        echo "Absensi berhasil, {$siswa['nama']}! Selamat datang di pelajaran $mapel.";
+        echo "✅ Absensi berhasil! Selamat datang {$siswa['nama']}";
     }
 } else {
-    echo "Gagal menyimpan absensi!";
+    echo "❌ Gagal menyimpan absensi";
 }
-?>

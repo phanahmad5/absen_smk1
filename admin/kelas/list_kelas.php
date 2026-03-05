@@ -1,137 +1,116 @@
 <?php
-// Pastikan session aktif
+// ================= SESSION =================
 if (session_status() == PHP_SESSION_NONE) session_start();
-
 require '../../config/koneksi.php';
 
-// Cek login admin
-if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'admin') {
+// ================= CEK LOGIN ADMIN =================
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
     header("Location: ../../index.php");
     exit;
 }
 
+// ================= AMBIL DATA KELAS =================
+$query = mysqli_query($conn, "SELECT * FROM kelas ORDER BY nama_kelas ASC");
+
 include '../../template/header.php';
 include '../../template/sidebar.php';
-
-// Ambil data kelas
-$query = mysqli_query($conn, "SELECT * FROM kelas ORDER BY nama_kelas ASC");
 ?>
 
-<!-- Custom CSS agar sidebar tetap dan content scroll -->
 <style>
-    /* Sidebar tetap fix di kiri */
-    #accordionSidebar {
-        position: fixed;
-        top: 0;
-        bottom: 0;
-        height: 100%;
-        overflow-y: auto;
-        z-index: 1030;
-    }
+#accordionSidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    height: 100%;
+    overflow-y: auto;
+}
 
-    /* Content bergeser sesuai lebar sidebar */
-    #content-wrapper {
-        margin-left: 224px; /* lebar sidebar SB Admin 2 */
-        min-height: 100vh;
-        overflow-y: auto;
-    }
+#content-wrapper {
+    margin-left: 224px;
+    min-height: 100vh;
+}
 </style>
 
-<!-- Content Wrapper -->
 <div id="content-wrapper" class="d-flex flex-column">
 
-    <?php include '../../template/topbar.php'; ?>
+<?php include '../../template/topbar.php'; ?>
 
-    <!-- Main Content -->
-    <div id="content">
-        <div class="container-fluid mt-4">
+<div id="content">
+<div class="container-fluid mt-4">
 
-            <!-- Alert Session (jika ada) -->
-            <?php if (!empty($_SESSION['alert'])): ?>
-                <div class="alert alert-<?= htmlspecialchars($_SESSION['alert']['type']); ?> alert-dismissible fade show" role="alert">
-                    <?= htmlspecialchars($_SESSION['alert']['message']); ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-                <?php unset($_SESSION['alert']); ?>
-            <?php endif; ?>
-
-            <!-- Page Heading -->
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3 class="m-0">Data Kelas</h3>
-                <a href="tambah_kelas.php" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Tambah Kelas
-                </a>
-            </div>
-
-            <!-- Tabel -->
-            <div class="card shadow mb-4">
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover align-middle" id="dataKelas" width="100%">
-                            <thead class="table-light text-center">
-                                <tr>
-                                    <th width="50px">No</th>
-                                    <th>Nama Kelas</th>
-                                    <th width="150px">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php
-                                $no = 1;
-                                if ($query && mysqli_num_rows($query) > 0) {
-                                    while ($d = mysqli_fetch_assoc($query)) {
-                                ?>
-                                <tr>
-                                    <td class="text-center"><?= $no++; ?></td>
-                                    <td><?= htmlspecialchars($d['nama_kelas']); ?></td>
-                                    <td class="text-center">
-                                        <div class="d-grid gap-2" style="max-width:120px;margin:0 auto;">
-                                            <a href="edit_kelas.php?id=<?= intval($d['id']); ?>" class="btn btn-sm btn-warning">
-                                                <i class="fas fa-edit"></i> Edit
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <?php
-                                    } // end while
-                                } else {
-                                ?>
-                                <tr>
-                                    <td class="text-center" colspan="3">Belum ada data kelas.</td>
-                                </tr>
-                                <?php } ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-        </div> <!-- /.container-fluid -->
+<!-- ALERT -->
+<?php if (!empty($_SESSION['alert'])): ?>
+    <div class="alert alert-<?= $_SESSION['alert']['type']; ?> alert-dismissible fade show">
+        <?= $_SESSION['alert']['message']; ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
-    <!-- End of Main Content -->
+<?php unset($_SESSION['alert']); endif; ?>
 
-    <?php include '../../template/footer.php'; ?>
+<div class="d-flex justify-content-between mb-3">
+    <h3>Data Kelas</h3>
+    <a href="tambah_kelas.php" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Tambah Kelas
+    </a>
 </div>
-<!-- End of Content Wrapper -->
+
+<div class="card shadow">
+<div class="card-body">
+<div class="table-responsive">
+
+<table class="table table-bordered table-hover" id="dataKelas">
+<thead class="table-light text-center">
+<tr>
+    <th width="50">No</th>
+    <th>Nama Kelas</th>
+    <th width="120">Aksi</th>
+</tr>
+</thead>
+<tbody>
+
+<?php
+$no = 1;
+if (mysqli_num_rows($query) > 0):
+    while ($row = mysqli_fetch_assoc($query)):
+?>
+<tr>
+    <td class="text-center"><?= $no++; ?></td>
+    <td><?= htmlspecialchars($row['nama_kelas']); ?></td>
+    <td class="text-center">
+        <a href="edit_kelas.php?id=<?= $row['id']; ?>" class="btn btn-warning btn-sm">
+            <i class="fas fa-edit"></i> Edit
+        </a>
+    </td>
+</tr>
+<?php endwhile; else: ?>
+<tr>
+    <td colspan="3" class="text-center">Belum ada data</td>
+</tr>
+<?php endif; ?>
+
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<?php include '../../template/footer.php'; ?>
+</div>
 
 <script>
-$(document).ready(function() {
-    // DataTables
+$(document).ready(function(){
     $('#dataKelas').DataTable({
-        "pageLength": 10,
-        "language": {
-            "lengthMenu": "Tampilkan _MENU_ data",
-            "search": "Cari:",
-            "zeroRecords": "Data tidak ditemukan",
-            "info": "Menampilkan _START_ - _END_ dari _TOTAL_ data",
-            "infoEmpty": "Tidak ada data tersedia",
-            "infoFiltered": "(disaring dari _MAX_ total data)"
+        language:{
+            search:"Cari:",
+            lengthMenu:"Tampilkan _MENU_ data",
+            info:"Menampilkan _START_ - _END_ dari _TOTAL_ data",
+            zeroRecords:"Data tidak ditemukan"
         }
     });
 
-    // Auto hide alert setelah 3 detik (jika ada)
-    setTimeout(function(){
-        $('.alert').fadeOut('slow', function(){ $(this).remove(); });
-    }, 3000);
+    setTimeout(() => $('.alert').fadeOut(), 3000);
 });
 </script>

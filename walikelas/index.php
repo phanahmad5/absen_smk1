@@ -2,9 +2,7 @@
 session_start();
 include '../config/koneksi.php';
 
-// ============================
-// Pastikan login wali kelas
-// ============================
+
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'walikelas') {
     header("Location: ../index.php?error=akses_ditolak");
     exit;
@@ -14,9 +12,9 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'walikelas') {
 $namaWali = $_SESSION['user']['nama'];
 $kelas = $_SESSION['user']['kelas'] ?? '';
 
-// ============================
+
 // Hitung jumlah siswa di kelas
-// ============================
+
 $stmt = $conn->prepare("SELECT COUNT(*) AS total_siswa FROM siswa WHERE kelas = ?");
 $stmt->bind_param("s", $kelas);
 $stmt->execute();
@@ -37,17 +35,14 @@ $totalSiswa = $row['total_siswa'];
 <body id="page-top">
 <div id="wrapper">
 
-    <!-- Sidebar -->
     <?php include '../template/sidebar.php'; ?>
-    <!-- End Sidebar -->
+   
 
     <div id="content-wrapper" class="d-flex flex-column">
         <div id="content">
-
-            <!-- Topbar -->
+           
             <?php include '../template/topbar.php'; ?>
-            <!-- End Topbar -->
-
+           
             <div class="container-fluid">
                 <h1 class="h3 mb-4 text-gray-800">Selamat Datang, <?= htmlspecialchars($namaWali) ?></h1>
 
@@ -65,7 +60,7 @@ $totalSiswa = $row['total_siswa'];
                         </div>
                     </div>
 
-                    <!-- Menu Cepat -->
+                   
                     <div class="col-xl-8 col-md-6 mb-4">
                         <div class="card shadow h-100 py-2">
                             <div class="card-body text-center">
@@ -78,13 +73,13 @@ $totalSiswa = $row['total_siswa'];
                         </div>
                     </div>
 
-                </div> <!-- End Row -->
-            </div> <!-- End Container -->
+                </div> 
+            </div> 
 
         </div>
-        <!-- Footer -->
+       
         <?php include '../template/footer.php'; ?>
-        <!-- End Footer -->
+        
     </div>
 </div>
 

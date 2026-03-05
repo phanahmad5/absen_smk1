@@ -148,6 +148,30 @@ $jadwal_active    = $jadwal_active ?? false;
             </div>
         </li>
 
+        <!-- Data Akademik -->
+<li class="nav-item <?= $akademik_active ? 'active' : '' ?>">
+    <a class="nav-link collapsed" href="javascript:void(0)"
+       data-toggle="collapse" data-target="#akademikMenu"
+       aria-expanded="<?= $akademik_active ? 'true' : 'false' ?>" aria-controls="akademikMenu">
+        <i class="fas fa-school"></i>
+        <span>Akademik</span>
+    </a>
+    <div id="akademikMenu" class="collapse <?= $akademik_active ? 'show' : '' ?>" data-parent="#accordionSidebar">
+        <div class="bg-white py-2 collapse-inner rounded">
+            <a class="collapse-item <?= isset($submenu) && $submenu == 'tahun_ajaran' ? 'active' : '' ?>"
+               href="/absensi_smk1kadungora/admin/tahun_ajaran.php">
+               Tahun Ajaran
+            </a>
+            <a class="collapse-item <?= isset($submenu) && $submenu == 'semester' ? 'active' : '' ?>"
+               href="/absensi_smk1kadungora/admin/semester.php">
+               Semester
+            </a>
+        </div>
+    </div>
+</li>
+
+
+
     <?php elseif ($user['role'] === 'guru'): ?>
 
         <li class="nav-item <?= $dashboard_active ? 'active' : '' ?>">
@@ -196,6 +220,13 @@ $jadwal_active    = $jadwal_active ?? false;
             </a>
         </li>
 
+        <li class="nav-item">
+            <a class="nav-link" href="/absensi_smk1kadungora/siswa/qr_saya.php">
+                <i class="fas fa-list"></i>
+                <span>QR code saya</span>
+            </a>
+        </li>
+
 
     <?php elseif ($user['role'] === 'walikelas'): ?>
 
@@ -228,7 +259,7 @@ $jadwal_active    = $jadwal_active ?? false;
     <li class="nav-item">
         <a class="nav-link" href="/absensi_smk1kadungora/logout.php" onclick="return confirm('Yakin ingin logout?')">
             <i class="fas fa-sign-out-alt"></i>
-            <span>Keluar</span>
+            <span>Logout</span>
         </a>
     </li>
 
