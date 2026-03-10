@@ -7,10 +7,10 @@ include '../../template/header.php';
 include '../../template/sidebar.php';
 ?>
 
-<!-- Content Wrapper -->
+
 <div id="content-wrapper" class="d-flex flex-column">
 
-    <!-- Main Content -->
+ 
     <div id="content" class="flex-grow-1" style="height:100vh; overflow-y:auto;">
         <?php include '../../template/topbar.php'; ?>
 
@@ -41,7 +41,6 @@ include '../../template/sidebar.php';
                 </div>
             </div>
 
-            <!-- Filter Kelas -->
             <form method="GET" class="mb-3 d-flex align-items-center gap-2">
                 <label class="fw-bold">Filter Kelas:</label>
                 <select name="kelas" class="form-select w-auto">

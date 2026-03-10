@@ -22,6 +22,27 @@ if ($pertemuan_id === 0) {
 
 $id_guru = $_SESSION['user']['id'];
 
+
+// ===============================
+// AMBIL TAHUN AJARAN AKTIF
+// ===============================
+$tahun = $conn->query("SELECT * FROM tahun_ajaran WHERE status='aktif' LIMIT 1");
+$tahun_aktif = $tahun->fetch_assoc();
+
+
+// ===============================
+// AMBIL SEMESTER AKTIF
+// ===============================
+$semester = $conn->query("
+    SELECT s.*, t.nama AS tahun
+    FROM semester s
+    JOIN tahun_ajaran t ON s.tahun_ajaran_id = t.id
+    WHERE s.status='aktif'
+    LIMIT 1
+");
+$semester_aktif = $semester->fetch_assoc();
+
+
 // ===============================
 // AMBIL DETAIL PERTEMUAN
 // ===============================
@@ -48,6 +69,7 @@ if (!$pertemuan) {
     exit('Data pertemuan tidak ditemukan');
 }
 
+
 // ===============================
 // HITUNG PERTEMUAN KE-
 // ===============================
@@ -64,6 +86,7 @@ $stmtKe->bind_param(
 );
 $stmtKe->execute();
 $pertemuan_ke = $stmtKe->get_result()->fetch_assoc()['pertemuan_ke'];
+
 
 // ===============================
 // AMBIL DATA ABSENSI
@@ -86,12 +109,13 @@ $data_absen = $absen->get_result();
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <title>Detail Pertemuan</title>
+<meta charset="UTF-8">
+<title>Detail Pertemuan</title>
 
-    <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
-    <link href="../css/sb-admin-2.min.css" rel="stylesheet">
-    <link href="../vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+<link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="../css/sb-admin-2.min.css" rel="stylesheet">
+<link href="../vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+
 </head>
 
 <body id="page-top">
@@ -113,93 +137,130 @@ $data_absen = $absen->get_result();
 <div class="card-body">
 
 <table class="table table-borderless mb-0">
+
 <tr>
-    <th width="180">Mata Pelajaran</th>
-    <td>: <?= htmlspecialchars($pertemuan['nama_mapel']) ?></td>
+<th width="200">Tahun Ajaran</th>
+<td>:
+    <span class="badge badge-primary">
+        <?= $tahun_aktif['nama'] ?? '-' ?>
+    </span>
+</td>
 </tr>
+
 <tr>
-    <th>Kelas</th>
-    <td>: <?= htmlspecialchars($pertemuan['kelas']) ?></td>
+<th>Semester</th>
+<td>:
+    <span class="badge badge-info">
+        <?= $semester_aktif['nama'] ?? '-' ?>
+    </span>
+</td>
 </tr>
+
 <tr>
-    <th>Tanggal</th>
-    <td>: <?= date('d-m-Y', strtotime($pertemuan['tanggal'])) ?></td>
+<th>Mata Pelajaran</th>
+<td>: <?= htmlspecialchars($pertemuan['nama_mapel']) ?></td>
 </tr>
+
 <tr>
-    <th>Pertemuan</th>
-    <td>:
-        <span class="badge badge-info">
-            Pertemuan ke-<?= $pertemuan_ke ?>
-        </span>
-    </td>
+<th>Kelas</th>
+<td>: <?= htmlspecialchars($pertemuan['kelas']) ?></td>
 </tr>
+
 <tr>
-    <th>Jam</th>
-    <td>: <?= htmlspecialchars($pertemuan['jam_mulai']) ?> - <?= htmlspecialchars($pertemuan['jam_selesai']) ?></td>
+<th>Tanggal</th>
+<td>: <?= date('d-m-Y', strtotime($pertemuan['tanggal'])) ?></td>
 </tr>
+
 <tr>
-    <th>Status</th>
-    <td>:
-        <span class="badge badge-<?= $pertemuan['status'] === 'dibuka' ? 'success' : 'secondary' ?>">
-            <?= ucfirst($pertemuan['status']) ?>
-        </span>
-    </td>
+<th>Pertemuan</th>
+<td>:
+    <span class="badge badge-warning">
+        Pertemuan ke-<?= $pertemuan_ke ?>
+    </span>
+</td>
 </tr>
+
+<tr>
+<th>Jam</th>
+<td>: <?= htmlspecialchars($pertemuan['jam_mulai']) ?> - <?= htmlspecialchars($pertemuan['jam_selesai']) ?></td>
+</tr>
+
+<tr>
+<th>Status</th>
+<td>:
+<span class="badge badge-<?= $pertemuan['status'] === 'dibuka' ? 'success' : 'secondary' ?>">
+<?= ucfirst($pertemuan['status']) ?>
+</span>
+</td>
+</tr>
+
 </table>
 
 </div>
 </div>
 
+
 <!-- TABEL ABSENSI -->
 <div class="card shadow mb-4">
+
 <div class="card-header py-3 bg-primary text-white">
-    <h6 class="m-0 font-weight-bold">Daftar Kehadiran Siswa</h6>
+<h6 class="m-0 font-weight-bold">Daftar Kehadiran Siswa</h6>
 </div>
 
 <div class="card-body">
 <div class="table-responsive">
+
 <table class="table table-bordered" id="dataTable">
+
 <thead class="thead-light">
 <tr>
-    <th>No</th>
-    <th>NISN</th>
-    <th>Nama Siswa</th>
-    <th>Jam Absen</th>
-    <th>Status</th>
+<th>No</th>
+<th>NISN</th>
+<th>Nama Siswa</th>
+<th>Jam Absen</th>
+<th>Status</th>
 </tr>
 </thead>
+
 <tbody>
 
 <?php if ($data_absen->num_rows === 0): ?>
+
 <tr>
-    <td colspan="5" class="text-center text-muted">
-        Belum ada siswa yang melakukan absensi
-    </td>
+<td colspan="5" class="text-center text-muted">
+Belum ada siswa yang melakukan absensi
+</td>
 </tr>
+
 <?php else: ?>
+
 <?php $no = 1; while ($row = $data_absen->fetch_assoc()): ?>
+
 <tr>
-    <td><?= $no++ ?></td>
-    <td><?= htmlspecialchars($row['nisn']) ?></td>
-    <td><?= htmlspecialchars($row['nama']) ?></td>
-    <td><?= htmlspecialchars($row['jam']) ?></td>
-    <td>
-        <span class="badge badge-success">
-            <?= htmlspecialchars($row['status']) ?>
-        </span>
-    </td>
+<td><?= $no++ ?></td>
+<td><?= htmlspecialchars($row['nisn']) ?></td>
+<td><?= htmlspecialchars($row['nama']) ?></td>
+<td><?= htmlspecialchars($row['jam']) ?></td>
+<td>
+<span class="badge badge-success">
+<?= htmlspecialchars($row['status']) ?>
+</span>
+</td>
 </tr>
+
 <?php endwhile; ?>
+
 <?php endif; ?>
 
 </tbody>
+
 </table>
 </div>
 </div>
 </div>
 
 <a href="jadwal.php" class="btn btn-secondary">
-    <i class="fas fa-arrow-left"></i> Kembali
+<i class="fas fa-arrow-left"></i> Kembali
 </a>
 
 </div>
@@ -210,7 +271,7 @@ $data_absen = $absen->get_result();
 </div>
 </div>
 
-<!-- JS -->
+
 <script src="../vendor/jquery/jquery.min.js"></script>
 <script src="../vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="../vendor/datatables/jquery.dataTables.min.js"></script>
@@ -219,15 +280,15 @@ $data_absen = $absen->get_result();
 
 <script>
 $(document).ready(function () {
-    $('#dataTable').DataTable({
-        pageLength: 10,
-        language: {
-            search: "Cari:",
-            lengthMenu: "Tampilkan _MENU_ data",
-            info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
-            zeroRecords: "Data tidak ditemukan"
-        }
-    });
+$('#dataTable').DataTable({
+pageLength: 10,
+language: {
+search: "Cari:",
+lengthMenu: "Tampilkan _MENU_ data",
+info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
+zeroRecords: "Data tidak ditemukan"
+}
+});
 });
 </script>
 

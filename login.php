@@ -111,7 +111,7 @@ if ($siswa = $res->fetch_assoc()) {
             'nisn'     => $siswa['nisn'],   // ✅ INI KUNCI UTAMA
             'nama'     => $siswa['nama'],
             'kelas'    => $siswa['kelas'],
-            'username' => $siswa['nisn'],   // opsional (buat konsistensi)
+            'username' => $siswa['nisn'],   
             'role'     => 'siswa'
         ];
 
@@ -191,12 +191,12 @@ if ($siswa = $res->fetch_assoc()) {
                                     </div>
                                 </div>
                             </div>
-                        </div> <!-- row -->
+                        </div> 
                     </div> 
-                </div> <!-- card -->
+                </div> 
             </div> 
         </div> 
-    </div> <!-- container -->
+    </div> 
 
     <script src="vendor/jquery/jquery.min.js"></script>
     <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>

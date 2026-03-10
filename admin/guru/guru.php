@@ -19,7 +19,7 @@ html, body {
     overflow: hidden;
 }
 
-/* WRAPPER UTAMA */
+
 #wrapper {
     display: flex;
     height: 100vh;
@@ -27,7 +27,7 @@ html, body {
     overflow: hidden;
 }
 
-/* CONTENT AREA */
+
 #content {
     flex: 1;
     height: 100vh;
@@ -36,13 +36,13 @@ html, body {
     background-color: #f8f9fc;
 }
 
-/* HILANGKAN PADDING DEFAULT */
+
 .container-fluid {
     padding-left: 0 !important;
     padding-right: 0 !important;
 }
 
-/* ISI KONTEN */
+
 .content-inner {
     padding: 20px;
 }
@@ -53,14 +53,14 @@ html, body {
     <!-- SIDEBAR -->
     <?php include '../../template/sidebar.php'; ?>
 
-    <!-- CONTENT -->
+
     <div id="content">
         <?php include '../../template/topbar.php'; ?>
 
         <div class="container-fluid">
             <div class="content-inner">
 
-                <!-- HEADER HALAMAN -->
+               
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h3 class="mb-0">Data Guru</h3>
                     <a href="tambah_guru.php" class="btn btn-primary">
@@ -68,7 +68,6 @@ html, body {
                     </a>
                 </div>
 
-                <!-- CARD -->
                 <div class="card shadow-sm">
                     <div class="card-body">
 

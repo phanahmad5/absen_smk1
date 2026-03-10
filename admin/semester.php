@@ -2,17 +2,16 @@
 session_start();
 require_once '../config/koneksi.php';
 
-// ===============================
-// VALIDASI ADMIN
-// ===============================
+
+// admin validasi
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
     echo "<script>alert('Akses ditolak'); window.location='../login.php';</script>";
     exit;
 }
 
-// ===============================
+
 // SIMPAN SEMESTER
-// ===============================
+
 if (isset($_POST['simpan'])) {
     $tahun = (int)$_POST['tahun_ajaran_id'];
     $nama  = $_POST['nama'];
@@ -29,9 +28,9 @@ if (isset($_POST['simpan'])) {
     exit;
 }
 
-// ===============================
+
 // AKTIFKAN SEMESTER
-// ===============================
+
 if (isset($_GET['aktifkan'])) {
     $id = (int)$_GET['aktifkan'];
 
@@ -42,9 +41,9 @@ if (isset($_GET['aktifkan'])) {
     exit;
 }
 
-// ===============================
+
 // DATA
-// ===============================
+
 $tahunAjaran = $conn->query("SELECT * FROM tahun_ajaran");
 $semester = $conn->query("
     SELECT s.*, t.nama AS tahun 

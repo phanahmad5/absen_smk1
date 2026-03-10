@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($stmt->num_rows > 0) {
             $error = "Username sudah digunakan!";
         } else {
-            // Hash password
+           
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
             $stmtInsert = $conn->prepare("INSERT INTO users (nama_lengkap, username, password, role) VALUES (?, ?, ?, ?)");
@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <link href="css/sb-admin-2.min.css" rel="stylesheet">
 
     <style>
-        /* Custom style untuk kolom logo */
+        
         .bg-login-logo {
             background-color: #fff;
             display: flex !important;
@@ -73,12 +73,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="card o-hidden border-0 shadow-lg my-5">
                 <div class="card-body p-0">
                     <div class="row">
-                        <!-- Kolom logo sekolah -->
+                        
                         <div class="col-lg-6 d-none d-lg-flex bg-login-logo">
                             <img src="/absensi_smk1kadungora/assets/logosmk1.png" alt="Logo Sekolah">
                         </div>
 
-                        <!-- Kolom form register -->
+                      
                         <div class="col-lg-6">
                             <div class="p-5">
                                 <div class="text-center">
@@ -118,12 +118,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             </div>
                         </div>
 
-                    </div> <!-- end row -->
-                </div> <!-- end card-body -->
-            </div> <!-- end card -->
-        </div> <!-- end col -->
-    </div> <!-- end row -->
-</div> <!-- end container -->
+                    </div> 
+                </div> 
+            </div> 
+        </div> 
+    </div> <
+</div> 
 
 <script src="vendor/jquery/jquery.min.js"></script>
 <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>

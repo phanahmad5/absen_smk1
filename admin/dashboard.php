@@ -17,24 +17,24 @@ $total_guru   = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total
 $total_mapel  = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM mapel"))['total'];
 $total_jadwal = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM jadwal"))['total'];
 
-// Load template
+
 include '../template/header.php';
 include '../template/sidebar.php';
 ?>
 
-<!-- Content Wrapper -->
+
 <div id="content-wrapper" class="d-flex flex-column">
     <div id="content">
  <?php include '../template/topbar.php'; ?>
         <div class="container-fluid mt-4">
-            <!-- Judul Halaman -->
+     
             <h1 class="h3 mb-4 text-gray-800">Dashboard Admin</h1>
             <p>Selamat datang, <strong><?= htmlspecialchars($nama_user); ?></strong>!</p>
 
-            <!-- Row Cards -->
+           
             <div class="row">
 
-                <!-- Card Total Siswa -->
+                <!-- otal Siswa -->
                 <div class="col-xl-3 col-md-6 mb-4">
                     <div class="card border-left-primary shadow h-100 py-2">
                         <div class="card-body d-flex flex-column align-items-center">
@@ -45,7 +45,7 @@ include '../template/sidebar.php';
                     </div>
                 </div>
 
-                <!-- Card Total Guru -->
+                <!-- Total Guru -->
                 <div class="col-xl-3 col-md-6 mb-4">
                     <div class="card border-left-success shadow h-100 py-2">
                         <div class="card-body d-flex flex-column align-items-center">
@@ -56,7 +56,7 @@ include '../template/sidebar.php';
                     </div>
                 </div>
 
-                <!-- Card Total Mapel -->
+                <!-- Total Mapel -->
                 <div class="col-xl-3 col-md-6 mb-4">
                     <div class="card border-left-info shadow h-100 py-2">
                         <div class="card-body d-flex flex-column align-items-center">
@@ -67,7 +67,7 @@ include '../template/sidebar.php';
                     </div>
                 </div>
 
-                <!-- Card Total Jadwal -->
+                <!-- Total Jadwal -->
                 <div class="col-xl-3 col-md-6 mb-4">
                     <div class="card border-left-warning shadow h-100 py-2">
                         <div class="card-body d-flex flex-column align-items-center">
@@ -79,14 +79,14 @@ include '../template/sidebar.php';
                 </div>
 
             </div>
-            <!-- End Row -->
+           
         </div>
 
     </div>
-    <!-- End Content -->
+    
 
     <?php include '../template/footer.php'; ?>
 </div>
-<!-- End Content Wrapper -->
 
-</div> <!-- End Wrapper -->
+
+</div> 
